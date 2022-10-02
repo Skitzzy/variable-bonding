@@ -14,7 +14,7 @@ const TREASURY_MANAGER = "0x245cc372c84b3645bf0ffe6538620b04a217988b";
 const TREASURY_ADDRESS = "0x9A315BdF513367C0377FB36545857d12e85813Ef";
 const GUARDIAN_ADDRESS = "0x245cc372c84b3645bf0ffe6538620b04a217988b";
 const ALCHEMIX_STAKING_POOL = "0xAB8e74017a8Cc7c15FFcCd726603790d26d7DeCa";
-const OLYMPUS_AUTHORITY_ADDRESS = "0x1c21F8EA7e39E2BA00BC12d2968D63F4acb38b7A";
+const Fyde_AUTHORITY_ADDRESS = "0x1c21F8EA7e39E2BA00BC12d2968D63F4acb38b7A";
 
 describe("Alchemix Allocator", async () => {
     let user,
@@ -36,10 +36,10 @@ describe("Alchemix Allocator", async () => {
             ALCHEMIX,
             TOKEMAK_T_ALCX,
             ALCHEMIX_STAKING_POOL,
-            OLYMPUS_AUTHORITY_ADDRESS
+            Fyde_AUTHORITY_ADDRESS
         );
 
-        treasury = await ethers.getContractAt("OlympusTreasury", TREASURY_ADDRESS);
+        treasury = await ethers.getContractAt("FydeTreasury", TREASURY_ADDRESS);
         alchemix_token = await ethers.getContractAt(
             "contracts/interfaces/IERC20.sol:IERC20",
             ALCHEMIX
@@ -96,7 +96,7 @@ describe("Alchemix Allocator", async () => {
         ).to.revertedWith("ERC20: transfer amount exceeds balance");
     });
 
-    it("Should deposit OHM treasury Alchemix funds to tokemak, stake received tALCX on Alchemix pool", async () => {
+    it("Should deposit MGMT treasury Alchemix funds to tokemak, stake received tALCX on Alchemix pool", async () => {
         await alchemixAllocator
             .connect(guardian)
             .deposit(treasury_alchemix_initial_balance, 8, false);
@@ -164,7 +164,7 @@ describe("Alchemix Allocator", async () => {
         );
     });
 
-    it("Should withdraw Alchemix funds from tokemak tALCX pool and send it back OHM treasury with accrued profit", async () => {
+    it("Should withdraw Alchemix funds from tokemak tALCX pool and send it back MGMT treasury with accrued profit", async () => {
         await impersonateAccount("0x90b6C61B102eA260131aB48377E143D6EB3A9d4B");
         const onlyRollover = await ethers.getSigner("0x90b6C61B102eA260131aB48377E143D6EB3A9d4B");
 

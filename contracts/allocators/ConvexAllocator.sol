@@ -8,7 +8,7 @@ import "../libraries/SafeERC20.sol";
 import "../interfaces/IERC20.sol";
 import "../interfaces/ITreasury.sol";
 
-import "../types/OlympusAccessControlled.sol";
+import "../types/FydeAccessControlled.sol";
 
 interface ICurve3Pool {
     // add liquidity to Curve to receive back 3CRV tokens
@@ -54,7 +54,7 @@ interface IConvexRewards {
  *  earning interest and $CVX.
  */
 
-contract ConvexAllocator is OlympusAccessControlled {
+contract ConvexAllocator is FydeAccessControlled {
     /* ======== DEPENDENCIES ======== */
 
     using SafeERC20 for IERC20;
@@ -80,7 +80,7 @@ contract ConvexAllocator is OlympusAccessControlled {
     IConvex internal immutable booster = IConvex(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
     // Curve 3Pool
     ICurve3Pool internal immutable curve3Pool = ICurve3Pool(0xA79828DF1850E8a3A3064576f380D90aECDD3359);
-    // Olympus Treasury
+    // Fyde Treasury
     ITreasury internal treasury = ITreasury(0x9A315BdF513367C0377FB36545857d12e85813Ef);
 
     // info for deposited tokens
@@ -94,7 +94,7 @@ contract ConvexAllocator is OlympusAccessControlled {
 
     /* ======== CONSTRUCTOR ======== */
 
-    constructor(IOlympusAuthority _authority) OlympusAccessControlled(_authority) {}
+    constructor(IFydeAuthority _authority) FydeAccessControlled(_authority) {}
 
     /* ======== OPEN FUNCTIONS ======== */
 

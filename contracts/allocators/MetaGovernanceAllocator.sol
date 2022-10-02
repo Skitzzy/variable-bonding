@@ -6,7 +6,7 @@ import "../libraries/SafeERC20.sol";
 import "../interfaces/IERC20.sol";
 import "../interfaces/ITreasury.sol";
 
-import "../types/OlympusAccessControlled.sol";
+import "../types/FydeAccessControlled.sol";
 
 interface IStaking {
     function stake(uint256 _amount, address _recipient) external returns (bool);
@@ -17,12 +17,12 @@ interface IStaking {
 }
 
 /// @title   Meta Governance Allocator
-/// @author  Olympus
+/// @author  Fyde
 /// @notice  Manages BTRFLY or LOBI from treasury to stake back to treasury
-contract MetaGovernanceAllocator is OlympusAccessControlled {
+contract MetaGovernanceAllocator is FydeAccessControlled {
     using SafeERC20 for IERC20;
 
-    /// @notice Olympus Treasury
+    /// @notice Fyde Treasury
     ITreasury internal treasury = ITreasury(0x9A315BdF513367C0377FB36545857d12e85813Ef);
     /// @notice BTRFLY token address
     address internal immutable BTRFLY = 0xC0d4Ceb216B3BA9C3701B291766fDCbA977ceC3A;
@@ -39,8 +39,8 @@ contract MetaGovernanceAllocator is OlympusAccessControlled {
 
     /// CONSTRUCTOR ///
 
-    ///  @param _authority  Address of the Olympus Authority contract
-    constructor(IOlympusAuthority _authority) OlympusAccessControlled(_authority) {}
+    ///  @param _authority  Address of the Fyde Authority contract
+    constructor(IFydeAuthority _authority) FydeAccessControlled(_authority) {}
 
     /// POLICY FUNCTIONS ///
 

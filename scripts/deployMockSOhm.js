@@ -1,11 +1,11 @@
 const { ethers } = require("hardhat");
 
 async function main() {
-    // Initialize sOHM to index of 1 and rebase percentage of 1%
-    const mockSOhmFactory = await ethers.getContractFactory("MockSOHM");
-    const mockSOhm = await mockSOhmFactory.deploy("1000000000", "10000000");
+    // Initialize sMGMT to index of 1 and rebase percentage of 1%
+    const mockSMGMTFactory = await ethers.getContractFactory("MockSMGMT");
+    const mockSMGMT = await mockSMGMTFactory.deploy("1000000000", "10000000");
 
-    console.log("SOHM DEPLOYED AT", mockSOhm.address);
+    console.log("SMGMT DEPLOYED AT", mockSMGMT.address);
 }
 
 main()

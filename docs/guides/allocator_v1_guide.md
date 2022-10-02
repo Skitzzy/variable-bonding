@@ -10,7 +10,7 @@ Treasury Address: `0x31F8Cc382c9898b273eff4e0b7626a6987C846E8`
 
 The first step is withdraw funds from the treasury via the "manage" function. "Manage" allows an approved address to withdraw excess reserves from the treasury.
 
-**NOTE**: This contract must have the "reserve manager" permission, and that withdrawn reserves decrease the treasury's ability to mint new OHM (since backing has been removed).
+**NOTE**: This contract must have the "reserve manager" permission, and that withdrawn reserves decrease the treasury's ability to mint new MGMT (since backing has been removed).
 
 Pass in the token address and the amount to manage. The token will be sent to the contract calling the function.
 
@@ -28,11 +28,11 @@ treasury.manage( DAI, amountToManage );
 ### Returning
 
 The second step is to return funds after the strategy has been closed.
-We utilize the `deposit` function to do this. Deposit allows an approved contract to deposit reserve assets into the treasury, and mint OHM against them. In this case however, we will NOT mint any OHM. This will be explained shortly.
+We utilize the `deposit` function to do this. Deposit allows an approved contract to deposit reserve assets into the treasury, and mint MGMT against them. In this case however, we will NOT mint any MGMT. This will be explained shortly.
 
-**NOTE**: The contract must have the "reserve depositor" permission, and that deposited reserves increase the treasury's ability to mint new OHM (since backing has been added).
+**NOTE**: The contract must have the "reserve depositor" permission, and that deposited reserves increase the treasury's ability to mint new MGMT (since backing has been added).
 
-Pass in the address sending the funds (most likely the allocator contract), the amount to deposit, and the address of the token. The final parameter, profit, dictates how much OHM to send. send\_, the amount of OHM to send, equals the value of amount minus profit.
+Pass in the address sending the funds (most likely the allocator contract), the amount to deposit, and the address of the token. The final parameter, profit, dictates how much MGMT to send. send\_, the amount of MGMT to send, equals the value of amount minus profit.
 
 ```solidity
 function deposit(
@@ -44,7 +44,7 @@ function deposit(
 
 ```
 
-To ensure no OHM is minted, we first get the value of the asset, and pass that in as profit.
+To ensure no MGMT is minted, we first get the value of the asset, and pass that in as profit.
 Pass in the token address and amount to get the treasury value.
 
 ```solidity

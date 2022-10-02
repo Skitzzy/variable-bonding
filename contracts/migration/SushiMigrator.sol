@@ -5,11 +5,11 @@ import "../libraries/SafeERC20.sol";
 import "../interfaces/ITreasury.sol";
 import "../interfaces/IUniswapV2Pair.sol";
 import "../interfaces/IUniswapV2Router.sol";
-import "../types/OlympusAccessControlledV2.sol";
+import "../types/FydeAccessControlledV2.sol";
 
 /// @notice This contract handles migrating lps from sushiswap to uniswap v2
-///         to make use of this contract ensure contract address is RESERVEMANAGER IN OHM Treasury
-contract SushiMigrator is OlympusAccessControlledV2 {
+///         to make use of this contract ensure contract address is RESERVEMANAGER IN MGMT Treasury
+contract SushiMigrator is FydeAccessControlledV2 {
     using SafeERC20 for IERC20;
 
     struct Amounts {
@@ -28,7 +28,7 @@ contract SushiMigrator is OlympusAccessControlledV2 {
 
     address immutable treasury = 0x9A315BdF513367C0377FB36545857d12e85813Ef;
 
-    constructor(address _olympusAuthority) OlympusAccessControlledV2(IOlympusAuthority(_olympusAuthority)) {}
+    constructor(address _FydeAuthority) FydeAccessControlledV2(IFydeAuthority(_FydeAuthority)) {}
 
     /// @notice Takes lp from treasury, remove liquidity from sushi, adds liquidity to uniswap v2
     /// @param sushiRouter_ sushi router addres
@@ -51,7 +51,7 @@ contract SushiMigrator is OlympusAccessControlledV2 {
 
         uint256 amount = IUniswapV2Pair(sushiLpAddress_).balanceOf(address(this));
 
-        (uint256 amountOHM, uint256 amountToken) = removeLiquidity(
+        (uint256 amountMGMT, uint256 amountToken) = removeLiquidity(
             sushiLpAddress_,
             sushiRouter_,
             amount,
@@ -64,7 +64,7 @@ contract SushiMigrator is OlympusAccessControlledV2 {
             uniRouter_,
             token0,
             token1,
-            amountOHM,
+            amountMGMT,
             amountToken,
             addLiquiditySlippage_
         );
@@ -72,7 +72,7 @@ contract SushiMigrator is OlympusAccessControlledV2 {
         amountsByMigrationId[txCount] = Amounts({
             sushiLpBeforeMigration: uint128(amount),
             leftoverSushiLpAfterMigration: uint128(amountAfterTx),
-            uniPoolToken0AddedToPool: uint128(amountOHM),
+            uniPoolToken0AddedToPool: uint128(amountMGMT),
             uniPoolToken1AddedToPool: uint128(amountToken),
             uniPoolLpReceived: uint128(liquidity),
             uniPoolToken0ReturnedToTreasury: uint128(amountA),
@@ -92,7 +92,7 @@ contract SushiMigrator is OlympusAccessControlledV2 {
         address router_,
         uint256 amount_,
         uint256 slippage_
-    ) internal returns (uint256 amountOHM, uint256 amountToken) {
+    ) internal returns (uint256 amountMGMT, uint256 amountToken) {
         (address token0, address token1, uint256 token0PoolBalance, uint256 token1PoolBalance) = getTokenInfo(
             pairAddr_,
             pairAddr_
@@ -103,7 +103,7 @@ contract SushiMigrator is OlympusAccessControlledV2 {
 
         IUniswapV2Pair(pairAddr_).approve(router_, amount_);
 
-        (amountOHM, amountToken) = IUniswapV2Router(router_).removeLiquidity(
+        (amountMGMT, amountToken) = IUniswapV2Router(router_).removeLiquidity(
             token0,
             token1,
             amount_,

@@ -32,7 +32,7 @@
       "inputs": [
         {
           "indexed": true,
-          "internalType": "contract IOlympusAuthority",
+          "internalType": "contract IFydeAuthority",
           "name": "authority",
           "type": "address"
         }
@@ -221,7 +221,7 @@
       "name": "authority",
       "outputs": [
         {
-          "internalType": "contract IOlympusAuthority",
+          "internalType": "contract IFydeAuthority",
           "name": "",
           "type": "address"
         }
@@ -423,7 +423,7 @@
     {
       "inputs": [
         {
-          "internalType": "contract IOlympusAuthority",
+          "internalType": "contract IFydeAuthority",
           "name": "_newAuthority",
           "type": "address"
         }

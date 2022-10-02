@@ -6,15 +6,15 @@ import "./interfaces/ITreasury.sol";
 import "./interfaces/IStaking.sol";
 import "./interfaces/IUniswapV2Pair.sol";
 
-import "./types/OlympusAccessControlled.sol";
+import "./types/FydeAccessControlled.sol";
 
 /// @notice Updated distributor adds the ability to mint and sync
 ///         into Uniswap V2-style liquidity pools, removing the
 ///         opportunity-cost dilemma of providing liquidity for
-///         OHM, as well as patches a small bug in the staking contract
+///         MGMT, as well as patches a small bug in the staking contract
 ///         that pulls forward an amount of the next epoch rewards. Note that
 ///         this implementation bases staking reward distributions on staked supply.
-contract Distributor is OlympusAccessControlled {
+contract Distributor is FydeAccessControlled {
     error No_Rebase_Occurred();
     error Only_Staking();
     error Not_Unlocked();
@@ -31,11 +31,11 @@ contract Distributor is OlympusAccessControlled {
 
     /* ====== VARIABLES ====== */
 
-    /// The OHM Token
+    /// The MGMT Token
     IERC20 private immutable mgmt;
-    /// The Olympus Treasury
+    /// The Fyde Treasury
     ITreasury private immutable treasury;
-    /// The OHM Staking Contract
+    /// The MGMT Staking Contract
     address private immutable staking;
 
     /// The % to increase balances per epoch
@@ -54,9 +54,9 @@ contract Distributor is OlympusAccessControlled {
         ITreasury _treasury,
         IERC20 _mgmt,
         address _staking,
-        IOlympusAuthority _authority,
+        IFydeAuthority _authority,
         uint256 _initialRate
-    ) OlympusAccessControlled(_authority) {
+    ) FydeAccessControlled(_authority) {
         treasury = _treasury;
         mgmt = _mgmt;
         staking = _staking;

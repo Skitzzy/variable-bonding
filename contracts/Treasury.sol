@@ -7,14 +7,14 @@ import "./libraries/SafeERC20.sol";
 import "./interfaces/IOwnable.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IERC20Metadata.sol";
-import "./interfaces/IOHM.sol";
-import "./interfaces/IsOHM.sol";
+import "./interfaces/IMGMT.sol";
+import "./interfaces/IsMGMT.sol";
 import "./interfaces/IBondingCalculator.sol";
 import "./interfaces/ITreasury.sol";
 
-import "./types/OlympusAccessControlled.sol";
+import "./types/FydeAccessControlled.sol";
 
-contract OlympusTreasury is OlympusAccessControlled, ITreasury {
+contract FydeTreasury is FydeAccessControlled, ITreasury {
     /* ========== DEPENDENCIES ========== */
 
     using SafeMath for uint256;
@@ -44,8 +44,8 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
         LIQUIDITYMANAGER,
         RESERVEDEBTOR,
         REWARDMANAGER,
-        SOHM,
-        OHMDEBTOR
+        SMGMT,
+        MGMTDEBTOR
     }
 
     struct Queue {
@@ -59,8 +59,8 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
 
     /* ========== STATE VARIABLES ========== */
 
-    IOHM public immutable OHM;
-    IsOHM public sOHM;
+    IMGMT public immutable MGMT;
+    IsMGMT public sMGMT;
 
     mapping(STATUS => address[]) public registry;
     mapping(STATUS => mapping(address => bool)) public permissions;
@@ -91,9 +91,9 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
         address _mgmt,
         uint256 _timelock,
         address _authority
-    ) OlympusAccessControlled(IOlympusAuthority(_authority)) {
-        require(_mgmt != address(0), "Zero address: OHM");
-        OHM = IOHM(_mgmt);
+    ) FydeAccessControlled(IFydeAuthority(_authority)) {
+        require(_mgmt != address(0), "Zero address: MGMT");
+        MGMT = IMGMT(_mgmt);
 
         timelockEnabled = false;
         initialized = false;
@@ -103,7 +103,7 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-     * @notice allow approved address to deposit an asset for OHM
+     * @notice allow approved address to deposit an asset for MGMT
      * @param _amount uint256
      * @param _token address
      * @param _profit uint256
@@ -125,9 +125,9 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
 
         uint256 value = tokenValue(_token, _amount);
-        // mint OHM needed and store amount of rewards for distribution
+        // mint MGMT needed and store amount of rewards for distribution
         send_ = value.sub(_profit);
-        OHM.mint(msg.sender, send_);
+        MGMT.mint(msg.sender, send_);
 
         totalReserves = totalReserves.add(value);
 
@@ -135,7 +135,7 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
     }
 
     /**
-     * @notice allow approved address to burn OHM for reserves
+     * @notice allow approved address to burn MGMT for reserves
      * @param _amount uint256
      * @param _token address
      */
@@ -144,7 +144,7 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
         require(permissions[STATUS.RESERVESPENDER][msg.sender], notApproved);
 
         uint256 value = tokenValue(_token, _amount);
-        OHM.burnFrom(msg.sender, value);
+        MGMT.burnFrom(msg.sender, value);
 
         totalReserves = totalReserves.sub(value);
 
@@ -174,21 +174,21 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
     }
 
     /**
-     * @notice mint new OHM using excess reserves
+     * @notice mint new MGMT using excess reserves
      * @param _recipient address
      * @param _amount uint256
      */
     function mint(address _recipient, uint256 _amount) external override {
         require(permissions[STATUS.REWARDMANAGER][msg.sender], notApproved);
         require(_amount <= excessReserves(), insufficientReserves);
-        OHM.mint(_recipient, _amount);
+        MGMT.mint(_recipient, _amount);
         emit Minted(msg.sender, _recipient, _amount);
     }
 
     /**
      * DEBT: The debt functions allow approved addresses to borrow treasury assets
-     * or OHM from the treasury, using sOHM as collateral. This might allow an
-     * sOHM holder to provide OHM liquidity without taking on the opportunity cost
+     * or MGMT from the treasury, using sMGMT as collateral. This might allow an
+     * sMGMT holder to provide MGMT liquidity without taking on the opportunity cost
      * of unstaking, or alter their backing without imposing risk onto the treasury.
      * Many of these use cases are yet to be defined, but they appear promising.
      * However, we urge the community to think critically and move slowly upon
@@ -202,8 +202,8 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
      */
     function incurDebt(uint256 _amount, address _token) external override {
         uint256 value;
-        if (_token == address(OHM)) {
-            require(permissions[STATUS.OHMDEBTOR][msg.sender], notApproved);
+        if (_token == address(MGMT)) {
+            require(permissions[STATUS.MGMTDEBTOR][msg.sender], notApproved);
             value = _amount;
         } else {
             require(permissions[STATUS.RESERVEDEBTOR][msg.sender], notApproved);
@@ -212,12 +212,12 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
         }
         require(value != 0, invalidToken);
 
-        sOHM.changeDebt(value, msg.sender, true);
-        require(sOHM.debtBalances(msg.sender) <= debtLimit[msg.sender], "Treasury: exceeds limit");
+        sMGMT.changeDebt(value, msg.sender, true);
+        require(sMGMT.debtBalances(msg.sender) <= debtLimit[msg.sender], "Treasury: exceeds limit");
         totalDebt = totalDebt.add(value);
 
-        if (_token == address(OHM)) {
-            OHM.mint(msg.sender, value);
+        if (_token == address(MGMT)) {
+            MGMT.mint(msg.sender, value);
             mgmtDebt = mgmtDebt.add(value);
         } else {
             totalReserves = totalReserves.sub(value);
@@ -236,26 +236,26 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
         require(permissions[STATUS.RESERVETOKEN][_token], notAccepted);
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
         uint256 value = tokenValue(_token, _amount);
-        sOHM.changeDebt(value, msg.sender, false);
+        sMGMT.changeDebt(value, msg.sender, false);
         totalDebt = totalDebt.sub(value);
         totalReserves = totalReserves.add(value);
         emit RepayDebt(msg.sender, _token, _amount, value);
     }
 
     /**
-     * @notice allow approved address to repay borrowed reserves with OHM
+     * @notice allow approved address to repay borrowed reserves with MGMT
      * @param _amount uint256
      */
-    function repayDebtWithOHM(uint256 _amount) external {
+    function repayDebtWithMGMT(uint256 _amount) external {
         require(
-            permissions[STATUS.RESERVEDEBTOR][msg.sender] || permissions[STATUS.OHMDEBTOR][msg.sender],
+            permissions[STATUS.RESERVEDEBTOR][msg.sender] || permissions[STATUS.MGMTDEBTOR][msg.sender],
             notApproved
         );
-        OHM.burnFrom(msg.sender, _amount);
-        sOHM.changeDebt(_amount, msg.sender, false);
+        MGMT.burnFrom(msg.sender, _amount);
+        sMGMT.changeDebt(_amount, msg.sender, false);
         totalDebt = totalDebt.sub(_amount);
         mgmtDebt = mgmtDebt.sub(_amount);
-        emit RepayDebt(msg.sender, address(OHM), _amount, _amount);
+        emit RepayDebt(msg.sender, address(MGMT), _amount, _amount);
     }
 
     /* ========== MANAGERIAL FUNCTIONS ========== */
@@ -305,8 +305,8 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
         address _calculator
     ) external onlyGovernor {
         require(timelockEnabled == false, "Use queueTimelock");
-        if (_status == STATUS.SOHM) {
-            sOHM = IsOHM(_address);
+        if (_status == STATUS.SMGMT) {
+            sMGMT = IsMGMT(_address);
         } else {
             permissions[_status][_address] = true;
 
@@ -402,9 +402,9 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
         require(!info.executed, "Action has already been executed");
         require(block.number >= info.timelockEnd, "Timelock not complete");
 
-        if (info.managing == STATUS.SOHM) {
+        if (info.managing == STATUS.SMGMT) {
             // 9
-            sOHM = IsOHM(info.toPermit);
+            sMGMT = IsMGMT(info.toPermit);
         } else {
             permissions[info.managing][info.toPermit] = true;
 
@@ -468,17 +468,17 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
      * @return uint
      */
     function excessReserves() public view override returns (uint256) {
-        return totalReserves.sub(OHM.totalSupply().sub(totalDebt));
+        return totalReserves.sub(MGMT.totalSupply().sub(totalDebt));
     }
 
     /**
-     * @notice returns OHM valuation of asset
+     * @notice returns MGMT valuation of asset
      * @param _token address
      * @param _amount uint256
      * @return value_ uint256
      */
     function tokenValue(address _token, uint256 _amount) public view override returns (uint256 value_) {
-        value_ = _amount.mul(10**IERC20Metadata(address(OHM)).decimals()).div(10**IERC20Metadata(_token).decimals());
+        value_ = _amount.mul(10**IERC20Metadata(address(MGMT)).decimals()).div(10**IERC20Metadata(_token).decimals());
 
         if (permissions[STATUS.LIQUIDITYTOKEN][_token]) {
             value_ = IBondingCalculator(bondCalculator[_token]).valuation(_token, _amount);
@@ -491,6 +491,6 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
      * @return uint256
      */
     function baseSupply() external view override returns (uint256) {
-        return OHM.totalSupply() - mgmtDebt;
+        return MGMT.totalSupply() - mgmtDebt;
     }
 }

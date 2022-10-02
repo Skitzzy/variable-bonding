@@ -6,28 +6,28 @@ const impersonateAccount = require("../utils/impersonate_account");
 const old_treasury_abi = require("../../abis/old_treasury_abi");
 const old_smgmt_abi = require("../../abis/smgmt");
 
-const { treasury_tokens, olympus_tokens, olympus_lp_tokens, swaps } = require("./tokens");
+const { treasury_tokens, Fyde_tokens, Fyde_lp_tokens, swaps } = require("./tokens");
 const { addresses } = require("./config");
 
 const EPOCH_LEGNTH = 2200;
 const DAI_ADDRESS = addresses.DAI;
 const SUSHI_ROUTER = addresses.SUSHI_ROUTER;
 const UNISWAP_ROUTER = addresses.UNISWAP_ROUTER;
-const OLD_OHM_ADDRESS = addresses.OLD_OHM_ADDRESS;
-const OLD_SOHM_ADDRESS = addresses.OLD_SOHM_ADDRESS;
+const OLD_MGMT_ADDRESS = addresses.OLD_MGMT_ADDRESS;
+const OLD_SMGMT_ADDRESS = addresses.OLD_SMGMT_ADDRESS;
 const TREASURY_MANAGER = addresses.TREASURY_MANAGER;
 const NON_TOKEN_HOLDER = addresses.NON_TOKEN_HOLDER;
-const OLD_WSOHM_ADDRESS = addresses.OLD_WSOHM_ADDRESS;
+const OLD_WSMGMT_ADDRESS = addresses.OLD_WSMGMT_ADDRESS;
 const OLD_STAKING_ADDRESS = addresses.OLD_STAKING_ADDRESS;
 const OLD_TREASURY_ADDRESS = addresses.OLD_TREASURY_ADDRESS;
 
 const tokenAddresses = treasury_tokens.map((token) => token.address);
 const reserveToken = treasury_tokens.map((token) => token.isReserve);
 
-const lp_token_0 = olympus_lp_tokens.map((lp_token) => lp_token.token0);
-const lp_token_1 = olympus_lp_tokens.map((lp_token) => lp_token.token1);
-const is_sushi_lp = olympus_lp_tokens.map((lp_token) => lp_token.is_sushi);
-const lp_token_addresses = olympus_lp_tokens.map((lp_token) => lp_token.address);
+const lp_token_0 = Fyde_lp_tokens.map((lp_token) => lp_token.token0);
+const lp_token_1 = Fyde_lp_tokens.map((lp_token) => lp_token.token1);
+const is_sushi_lp = Fyde_lp_tokens.map((lp_token) => lp_token.is_sushi);
+const lp_token_addresses = Fyde_lp_tokens.map((lp_token) => lp_token.address);
 
 // Skipping this test because we don't need to validate this test
 describe.skip("Treasury Token Migration", async function () {
@@ -36,11 +36,11 @@ describe.skip("Treasury Token Migration", async function () {
         user1,
         manager,
         old_treasury,
-        olympusTokenMigrator,
+        FydeTokenMigrator,
         index,
         mgmt,
-        sOhm,
-        gOhm,
+        sMGMT,
+        gMGMT,
         newTreasury,
         newStaking,
         authority;
@@ -50,7 +50,7 @@ describe.skip("Treasury Token Migration", async function () {
         await fork_network(13487643);
         [deployer, user1] = await ethers.getSigners();
 
-        let authorityContract = await ethers.getContractFactory("OlympusAuthority");
+        let authorityContract = await ethers.getContractFactory("FydeAuthority");
         authority = await authorityContract.deploy(
             deployer.address,
             deployer.address,
@@ -58,47 +58,47 @@ describe.skip("Treasury Token Migration", async function () {
             deployer.address
         );
 
-        let mgmtContract = await ethers.getContractFactory("OlympusERC20Token");
+        let mgmtContract = await ethers.getContractFactory("FydeERC20Token");
         mgmt = await mgmtContract.deploy(authority.address);
 
-        let sOhmContract = await ethers.getContractFactory("sOlympus");
-        sOhm = await sOhmContract.connect(deployer).deploy();
+        let sMGMTContract = await ethers.getContractFactory("sFyde");
+        sMGMT = await sMGMTContract.connect(deployer).deploy();
 
-        let newTreasuryContract = await ethers.getContractFactory("OlympusTreasury");
+        let newTreasuryContract = await ethers.getContractFactory("FydeTreasury");
         newTreasury = await newTreasuryContract.deploy(mgmt.address, 10, authority.address);
 
-        let tokenMigratorContract = await ethers.getContractFactory("OlympusTokenMigrator");
-        olympusTokenMigrator = await tokenMigratorContract.deploy(
-            OLD_OHM_ADDRESS,
-            OLD_SOHM_ADDRESS,
+        let tokenMigratorContract = await ethers.getContractFactory("FydeTokenMigrator");
+        FydeTokenMigrator = await tokenMigratorContract.deploy(
+            OLD_MGMT_ADDRESS,
+            OLD_SMGMT_ADDRESS,
             OLD_TREASURY_ADDRESS,
             OLD_STAKING_ADDRESS,
-            OLD_WSOHM_ADDRESS,
+            OLD_WSMGMT_ADDRESS,
             SUSHI_ROUTER,
             UNISWAP_ROUTER,
             1, // timelock for defunds
             authority.address
         );
-        const migratorAddress = olympusTokenMigrator.address;
+        const migratorAddress = FydeTokenMigrator.address;
 
-        let gOhmContract = await ethers.getContractFactory("gOHM");
-        gOhm = await gOhmContract.deploy(migratorAddress, OLD_SOHM_ADDRESS);
+        let gMGMTContract = await ethers.getContractFactory("gMGMT");
+        gMGMT = await gMGMTContract.deploy(migratorAddress, OLD_SMGMT_ADDRESS);
 
         /**
          *  Connect the contracts once they have been deployed
          * */
 
-        // Set gOHM on migrator contract
-        await olympusTokenMigrator.connect(deployer).setgOHM(gOhm.address);
+        // Set gMGMT on migrator contract
+        await FydeTokenMigrator.connect(deployer).setgMGMT(gMGMT.address);
 
         // Setting the vault for new mgmt:
         await authority.pushVault(newTreasury.address, true);
 
-        let newStakingContract = await ethers.getContractFactory("OlympusStaking");
+        let newStakingContract = await ethers.getContractFactory("FydeStaking");
         newStaking = await newStakingContract.deploy(
             mgmt.address,
-            sOhm.address,
-            gOhm.address,
+            sMGMT.address,
+            gMGMT.address,
             EPOCH_LEGNTH,
             0,
             0,
@@ -108,12 +108,12 @@ describe.skip("Treasury Token Migration", async function () {
         // Initialize staking
         newStaking.connect(deployer).setWarmupLength(0);
 
-        // Initialize new sOHM
-        const oldSmgmt = await new ethers.Contract(OLD_SOHM_ADDRESS, old_smgmt_abi, ethers.provider);
+        // Initialize new sMGMT
+        const oldSmgmt = await new ethers.Contract(OLD_SMGMT_ADDRESS, old_smgmt_abi, ethers.provider);
         index = await oldSmgmt.connect(deployer).index();
-        sOhm.connect(deployer).setIndex(index);
-        sOhm.connect(deployer).setgOHM(gOhm.address);
-        sOhm.connect(deployer).initialize(newStaking.address, newTreasury.address);
+        sMGMT.connect(deployer).setIndex(index);
+        sMGMT.connect(deployer).setgMGMT(gMGMT.address);
+        sMGMT.connect(deployer).initialize(newStaking.address, newTreasury.address);
 
         // Send treasury_manager eth for gas on simimulated mainnet
         await sendETH(deployer, TREASURY_MANAGER);
@@ -127,8 +127,8 @@ describe.skip("Treasury Token Migration", async function () {
         );
 
         await setContracts(treasury_tokens);
-        await setContracts(olympus_tokens);
-        await setContracts(olympus_lp_tokens);
+        await setContracts(Fyde_tokens);
+        await setContracts(Fyde_lp_tokens);
         await setContracts(swaps);
 
         // Give migrator permissions for managing old treasury
@@ -171,13 +171,13 @@ describe.skip("Treasury Token Migration", async function () {
     it("Should fail if sender is not DAO", async () => {
         let token = treasury_tokens[0];
         await expect(
-            olympusTokenMigrator.connect(user1).migrateToken(token.address)
+            FydeTokenMigrator.connect(user1).migrateToken(token.address)
         ).to.revertedWith("UNAUTHORIZED");
 
-        let lpToken = olympus_lp_tokens[0];
+        let lpToken = Fyde_lp_tokens[0];
 
         await expect(
-            olympusTokenMigrator
+            FydeTokenMigrator
                 .connect(user1)
                 .migrateLP(lpToken.address, lpToken.is_sushi, lpToken.token0, 0, 0)
         ).to.revertedWith("UNAUTHORIZED");
@@ -187,7 +187,7 @@ describe.skip("Treasury Token Migration", async function () {
         await sendETH(deployer, NON_TOKEN_HOLDER);
         const user = await impersonate(NON_TOKEN_HOLDER);
         // Using safeTransferFrom so generic safeERC20 error message
-        await expect(olympusTokenMigrator.connect(user).migrate(1000000, 1, 2)).to.revertedWith(
+        await expect(FydeTokenMigrator.connect(user).migrate(1000000, 1, 2)).to.revertedWith(
             "TRANSFER_FROM_FAILED"
         );
     });
@@ -195,7 +195,7 @@ describe.skip("Treasury Token Migration", async function () {
     it("Should fail if user does not have any of the mgmt tokens to bridge back ", async () => {
         await sendETH(deployer, NON_TOKEN_HOLDER);
         const user = await impersonate(NON_TOKEN_HOLDER);
-        await expect(olympusTokenMigrator.connect(user).bridgeBack(1000000, 0)).to.revertedWith(
+        await expect(FydeTokenMigrator.connect(user).bridgeBack(1000000, 0)).to.revertedWith(
             "ERC20: burn amount exceeds balance"
         );
     });
@@ -203,7 +203,7 @@ describe.skip("Treasury Token Migration", async function () {
     describe("Withdraw Functions", async () => {
         it("should fail if the caller isn't the deployer", async () => {
             await expect(
-                olympusTokenMigrator
+                FydeTokenMigrator
                     .connect(user1)
                     .withdrawToken(DAI_ADDRESS, 1, addresses.ZERO_ADDRESS)
             ).to.be.revertedWith("UNAUTHORIZED");
@@ -219,18 +219,18 @@ describe.skip("Treasury Token Migration", async function () {
             // Send dai to address
             await daiTokenContract
                 .connect(daiHolder)
-                .approve(olympusTokenMigrator.address, daiAmount);
+                .approve(FydeTokenMigrator.address, daiAmount);
             await daiTokenContract
                 .connect(daiHolder)
-                .transfer(olympusTokenMigrator.address, daiAmount);
+                .transfer(FydeTokenMigrator.address, daiAmount);
 
             const migratorDaiBalance = await daiTokenContract.balanceOf(
-                olympusTokenMigrator.address
+                FydeTokenMigrator.address
             );
             await expect(migratorDaiBalance).to.be.equal(daiAmount);
 
             // withdraw dai
-            await olympusTokenMigrator
+            await FydeTokenMigrator
                 .connect(deployer)
                 .withdrawToken(DAI_ADDRESS, daiAmount, addresses.DAI_HOLDER);
         });
@@ -240,7 +240,7 @@ describe.skip("Treasury Token Migration", async function () {
             const startingEthBal = await provider.getBalance(user1.address);
             await expect(
                 user1.sendTransaction({
-                    to: olympusTokenMigrator.address,
+                    to: FydeTokenMigrator.address,
                     value: startingEthBal.toString(), // 1 ether
                 })
             ).to.be.revertedWith(
@@ -249,95 +249,95 @@ describe.skip("Treasury Token Migration", async function () {
         });
     });
 
-    describe("Olympus Token Migrations", async () => {
-        let sOHMindex = 1;
+    describe("Fyde Token Migrations", async () => {
+        let sMGMTindex = 1;
 
         function toGmgmt(smgmtAmount) {
-            return smgmtAmount.mul(10 ** 9).div(sOHMindex);
+            return smgmtAmount.mul(10 ** 9).div(sMGMTindex);
         }
 
         async function performBridgeBack({ wallet, contract, migrationType }) {
-            let oldgOhmBalance = await gOhm.balanceOf(wallet);
+            let oldgMGMTBalance = await gMGMT.balanceOf(wallet);
 
             const user = await impersonate(wallet);
-            await gOhm.connect(user).approve(olympusTokenMigrator.address, oldgOhmBalance);
-            await olympusTokenMigrator.connect(user).bridgeBack(oldgOhmBalance, migrationType);
+            await gMGMT.connect(user).approve(FydeTokenMigrator.address, oldgMGMTBalance);
+            await FydeTokenMigrator.connect(user).bridgeBack(oldgMGMTBalance, migrationType);
 
             let newTokenBalance = await contract.balanceOf(wallet);
 
-            return { oldgOhmBalance, newTokenBalance };
+            return { oldgMGMTBalance, newTokenBalance };
         }
 
         before(async () => {
-            sOHMindex = index;
-            for (let i = 0; i < olympus_tokens.length; i++) {
-                const { wallet } = olympus_tokens[i];
+            sMGMTindex = index;
+            for (let i = 0; i < Fyde_tokens.length; i++) {
+                const { wallet } = Fyde_tokens[i];
                 await sendETH(deployer, wallet);
             }
         });
         /** 
         it("should migrate mgmt", async () => {
-            const token = olympus_tokens.find((token) => token.name === "mgmt");
-            const { oldTokenBalance, newgOhmBalance } = await performMigration(token);
+            const token = Fyde_tokens.find((token) => token.name === "mgmt");
+            const { oldTokenBalance, newgMGMTBalance } = await performMigration(token);
 
             let gmgmtBalanceOld = toGmgmt(oldTokenBalance).toString();
-            let gmgmtBalanceNew = newgOhmBalance.toString().slice(0, 10); //Hacky shit bruh
+            let gmgmtBalanceNew = newgMGMTBalance.toString().slice(0, 10); //Hacky shit bruh
 
             assert.equal(gmgmtBalanceOld, gmgmtBalanceNew);
         });
 */
         it("should migrate smgmt", async () => {
-            const token = olympus_tokens.find((token) => token.name === "smgmt");
-            const { oldTokenBalance, newgOhmBalance } = await performMigration(token);
+            const token = Fyde_tokens.find((token) => token.name === "smgmt");
+            const { oldTokenBalance, newgMGMTBalance } = await performMigration(token);
 
             let gmgmtBalanceOld = toGmgmt(oldTokenBalance).toString();
-            let gmgmtBalanceNew = newgOhmBalance.toString().slice(0, 11); //Hacky shit bruh
+            let gmgmtBalanceNew = newgMGMTBalance.toString().slice(0, 11); //Hacky shit bruh
 
             assert.equal(gmgmtBalanceOld, gmgmtBalanceNew);
         });
-        it("should migrate wsOhm", async () => {
-            const token = olympus_tokens.find((token) => token.name === "wsmgmt");
-            const { oldTokenBalance, newgOhmBalance } = await performMigration(token);
+        it("should migrate wsMGMT", async () => {
+            const token = Fyde_tokens.find((token) => token.name === "wsmgmt");
+            const { oldTokenBalance, newgMGMTBalance } = await performMigration(token);
 
             assert.equal(
-                newgOhmBalance.toString(),
+                newgMGMTBalance.toString(),
                 oldTokenBalance.toString(),
-                "New gOhm balance does not equal tokenBalance on migrate"
+                "New gMGMT balance does not equal tokenBalance on migrate"
             );
         });
 
         it("should bridgeBack mgmt", async () => {
-            const token = olympus_tokens.find((token) => token.name === "mgmt");
-            const { oldgOhmBalance, newTokenBalance } = await performBridgeBack(token);
+            const token = Fyde_tokens.find((token) => token.name === "mgmt");
+            const { oldgMGMTBalance, newTokenBalance } = await performBridgeBack(token);
 
-            let gmgmtBalanceOld = oldgOhmBalance.toString().slice(0, 10); //Hacky shit bruh
+            let gmgmtBalanceOld = oldgMGMTBalance.toString().slice(0, 10); //Hacky shit bruh
             let gmgmtBalanceNew = toGmgmt(newTokenBalance).toString();
 
             assert.equal(gmgmtBalanceOld, gmgmtBalanceNew);
         });
-        it("should bridgeBack sOhm", async () => {
-            const token = olympus_tokens.find((token) => token.name === "smgmt");
-            const { oldgOhmBalance, newTokenBalance } = await performBridgeBack(token);
+        it("should bridgeBack sMGMT", async () => {
+            const token = Fyde_tokens.find((token) => token.name === "smgmt");
+            const { oldgMGMTBalance, newTokenBalance } = await performBridgeBack(token);
 
-            let gmgmtBalanceOld = oldgOhmBalance.toString().slice(0, 11); //Hacky shit bruh
+            let gmgmtBalanceOld = oldgMGMTBalance.toString().slice(0, 11); //Hacky shit bruh
             let gmgmtBalanceNew = toGmgmt(newTokenBalance).toString();
 
             assert.equal(gmgmtBalanceOld, gmgmtBalanceNew);
         });
-        it("should bridgeBack gOhm", async () => {
-            const token = olympus_tokens.find((token) => token.name === "wsmgmt");
-            const { oldgOhmBalance, newTokenBalance } = await performBridgeBack(token);
+        it("should bridgeBack gMGMT", async () => {
+            const token = Fyde_tokens.find((token) => token.name === "wsmgmt");
+            const { oldgMGMTBalance, newTokenBalance } = await performBridgeBack(token);
 
             assert.equal(
-                oldgOhmBalance.toString(),
+                oldgMGMTBalance.toString(),
                 newTokenBalance.toString(),
-                "New gOhm balance does not equal tokenBalance on bridgeBack"
+                "New gMGMT balance does not equal tokenBalance on bridgeBack"
             );
         });
     });
 
     it("Should allow DAO migrate reserves ", async () => {
-        const allReserveandLP = [...olympus_lp_tokens, ...treasury_tokens];
+        const allReserveandLP = [...Fyde_lp_tokens, ...treasury_tokens];
         const uni_factory_contract = swaps[0].contract;
         const sushi_factory_contract = swaps[1].contract;
 
@@ -349,19 +349,19 @@ describe.skip("Treasury Token Migration", async function () {
 
         const lusd = treasury_tokens.find((t) => t.name === "lusd");
 
-        await olympusTokenMigrator
+        await FydeTokenMigrator
             .connect(deployer)
             .migrateContracts(
                 newTreasury.address,
                 newStaking.address,
                 mgmt.address,
-                sOhm.address,
+                sMGMT.address,
                 lusd.address
             );
 
-        await olympus_lp_tokens.forEach(async (lpToken) => {
+        await Fyde_lp_tokens.forEach(async (lpToken) => {
             // console.log("migrating", lpToken.name);
-            await olympusTokenMigrator
+            await FydeTokenMigrator
                 .connect(deployer)
                 .migrateLP(lpToken.address, lpToken.is_sushi, lpToken.token0, 0, 0);
         });
@@ -369,11 +369,11 @@ describe.skip("Treasury Token Migration", async function () {
         await treasury_tokens.forEach(async (token) => {
             if (token.name !== "lusd" || token.name !== "dai") {
                 // console.log("migrating", token.name);
-                await olympusTokenMigrator.connect(deployer).migrateToken(token.address);
+                await FydeTokenMigrator.connect(deployer).migrateToken(token.address);
             }
         });
 
-        const newLPTokensPromises = [...olympus_lp_tokens].map(async (lpToken) => {
+        const newLPTokensPromises = [...Fyde_lp_tokens].map(async (lpToken) => {
             const asset0Address = lpToken.token0;
             let newLPAddress;
             if (lpToken.is_sushi) {
@@ -406,7 +406,7 @@ describe.skip("Treasury Token Migration", async function () {
 
         const assertPromises = allReserveandLP.map(async (token) => {
             if (token.name === "dai") {
-                const old_mgmt_total_supply = await olympus_tokens[2].contract.totalSupply();
+                const old_mgmt_total_supply = await Fyde_tokens[2].contract.totalSupply();
                 const dai_balance_left_to_back_circulating_mgmt_1_for_1 =
                     await treasury_tokens[3].contract.balanceOf(OLD_TREASURY_ADDRESS);
 
@@ -453,7 +453,7 @@ describe.skip("Treasury Token Migration", async function () {
 
     describe("Defund", async () => {
         it("Should defund", async () => {
-            await olympusTokenMigrator.connect(deployer).startTimelock();
+            await FydeTokenMigrator.connect(deployer).startTimelock();
             await advance(2);
 
             let dai = treasury_tokens.find((token) => token.name === "dai");
@@ -462,36 +462,36 @@ describe.skip("Treasury Token Migration", async function () {
                 .connect(deployer)
                 .balanceOf(newTreasury.address);
 
-            const token0 = olympus_tokens.find((token) => token.name === "wsmgmt");
+            const token0 = Fyde_tokens.find((token) => token.name === "wsmgmt");
             await performMigration(token0);
 
-            const token1 = olympus_tokens.find((token) => token.name === "smgmt");
+            const token1 = Fyde_tokens.find((token) => token.name === "smgmt");
             await performMigration(token1);
 
-            const olympus_token_migrator_wsmgmt_balance = await olympus_tokens[0].contract.balanceOf(
-                olympusTokenMigrator.address
+            const Fyde_token_migrator_wsmgmt_balance = await Fyde_tokens[0].contract.balanceOf(
+                FydeTokenMigrator.address
             );
 
-            const wsmgmt_balance_in_mgmt = await olympus_tokens[0].contract.wOHMTosOHM(
-                olympus_token_migrator_wsmgmt_balance
+            const wsmgmt_balance_in_mgmt = await Fyde_tokens[0].contract.wMGMTTosMGMT(
+                Fyde_token_migrator_wsmgmt_balance
             );
 
-            const olympus_token_migrator_mgmt_balance = await olympus_tokens[2].contract.balanceOf(
-                olympusTokenMigrator.address
+            const Fyde_token_migrator_mgmt_balance = await Fyde_tokens[2].contract.balanceOf(
+                FydeTokenMigrator.address
             );
-            const olympus_token_migrator_smgmt_balance = await olympus_tokens[1].contract.balanceOf(
-                olympusTokenMigrator.address
+            const Fyde_token_migrator_smgmt_balance = await Fyde_tokens[1].contract.balanceOf(
+                FydeTokenMigrator.address
             );
 
-            const olympus_token_migrator_total_mgmt =
+            const Fyde_token_migrator_total_mgmt =
                 Number(wsmgmt_balance_in_mgmt) +
-                Number(olympus_token_migrator_mgmt_balance) +
-                Number(olympus_token_migrator_smgmt_balance);
+                Number(Fyde_token_migrator_mgmt_balance) +
+                Number(Fyde_token_migrator_smgmt_balance);
 
             const convert_mgmt_to_dai_decimal =
-                (olympus_token_migrator_total_mgmt * 10 ** 18) / 10 ** 9;
+                (Fyde_token_migrator_total_mgmt * 10 ** 18) / 10 ** 9;
 
-            await olympusTokenMigrator.connect(deployer).defund(DAI_ADDRESS);
+            await FydeTokenMigrator.connect(deployer).defund(DAI_ADDRESS);
 
             const v2TreasuryBalanceNew = await dai.contract
                 .connect(deployer)
@@ -512,11 +512,11 @@ describe.skip("Treasury Token Migration", async function () {
 
         const user = await impersonate(wallet);
 
-        await contract.connect(user).approve(olympusTokenMigrator.address, oldTokenBalance);
-        await olympusTokenMigrator.connect(user).migrate(oldTokenBalance, migrationType, 2); // to gOHM
+        await contract.connect(user).approve(FydeTokenMigrator.address, oldTokenBalance);
+        await FydeTokenMigrator.connect(user).migrate(oldTokenBalance, migrationType, 2); // to gMGMT
 
-        let newgOhmBalance = await gOhm.balanceOf(wallet);
-        return { oldTokenBalance, newgOhmBalance };
+        let newgMGMTBalance = await gMGMT.balanceOf(wallet);
+        return { oldTokenBalance, newgMGMTBalance };
     }
 });
 
@@ -596,37 +596,37 @@ async function getTreasuryBalance(deployer, newTreasuryAddress, tokens) {
     return { v1Treasury, v2Treasury };
 }
 
-async function migrateToken(deployer, migrator, gOhm, token, isBridgeBack = false) {
+async function migrateToken(deployer, migrator, gMGMT, token, isBridgeBack = false) {
     const contract = token.contract;
     const name = token.name;
     const userAddress = token.wallet;
     const type = token.migrationType;
 
     let oldTokenBalance = await contract.balanceOf(userAddress);
-    let oldgOhmBalance = await gOhm.balanceOf(userAddress);
+    let oldgMGMTBalance = await gMGMT.balanceOf(userAddress);
 
     console.log(
         `===============User Token (${name}) Migration: isBridgeBack:${isBridgeBack} ===============`
     );
 
     console.log(`(old) user_${name}_balance:`, oldTokenBalance.toString());
-    console.log("(old) user_gmgmt_balance:", oldgOhmBalance.toString());
+    console.log("(old) user_gmgmt_balance:", oldgMGMTBalance.toString());
 
     const user = await impersonate(userAddress);
     await sendETH(deployer, userAddress);
 
     await contract.connect(user).approve(migrator.address, oldTokenBalance);
     if (isBridgeBack) {
-        await migrator.connect(user).bridgeBack(oldgOhmBalance, type);
+        await migrator.connect(user).bridgeBack(oldgMGMTBalance, type);
     } else {
         await migrator.connect(user).migrate(oldTokenBalance, type, 2);
     }
 
     let newTokenBalance = await contract.balanceOf(userAddress);
-    let newgOhmBalance = await gOhm.balanceOf(userAddress);
+    let newgMGMTBalance = await gMGMT.balanceOf(userAddress);
 
     console.log(`(new) user_${name}_balance:`, newTokenBalance.toString());
-    console.log("(new) user_gmgmt_balance:", newgOhmBalance.toString());
+    console.log("(new) user_gmgmt_balance:", newgMGMTBalance.toString());
     console.log();
 }
 
@@ -662,17 +662,17 @@ async function getTreasuryBalanceOldAndNewAfterTx(deployer, newTreasury, mgmt) {
 
     const new_mgmt_frax_lp = new ethers.Contract(
         new_mgmt_frax_lp_address,
-        olympus_lp_tokens[0].abi,
+        Fyde_lp_tokens[0].abi,
         ethers.provider
     );
     const new_mgmt_dai_lp = new ethers.Contract(
         new_mgmt_dai_lp_address,
-        olympus_lp_tokens[0].abi,
+        Fyde_lp_tokens[0].abi,
         ethers.provider
     );
     const new_mgmt_lusd_lp = new ethers.Contract(
         new_mgmt_lusd_lp_address,
-        olympus_lp_tokens[0].abi,
+        Fyde_lp_tokens[0].abi,
         ethers.provider
     );
     const addr = [new_mgmt_frax_lp, new_mgmt_lusd_lp, new_mgmt_dai_lp];

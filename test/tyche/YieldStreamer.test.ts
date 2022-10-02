@@ -2,20 +2,20 @@ import { BigNumber, ContractFactory } from "ethers";
 import { ethers } from "hardhat";
 import chai, { expect } from "chai";
 import {
-    OlympusStaking,
-    OlympusERC20Token,
-    GOHM,
-    OlympusAuthority,
+    FydeStaking,
+    FydeERC20Token,
+    GMGMT,
+    FydeAuthority,
     DAI,
-    SOlympus,
-    OlympusTreasury,
+    SFyde,
+    FydeTreasury,
     Distributor,
     YieldStreamer,
     IUniswapV2Router,
     AggregatorV3Interface,
 } from "../../types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { toDecimals, toOhm, advanceEpoch, fromDecimals } from "../utils/Utilities";
+import { toDecimals, toMGMT, advanceEpoch, fromDecimals } from "../utils/Utilities";
 import { FakeContract, smock } from "@defi-wonderland/smock";
 
 describe("YieldStreamer", async () => {
@@ -29,7 +29,7 @@ describe("YieldStreamer", async () => {
     const triggerRebase = async () => {
         advanceEpoch(); // 8 hours per rebase
         await distributor.triggerRebase();
-        return await sOhm.index();
+        return await sMGMT.index();
     };
 
     chai.use(smock.matchers);
@@ -40,20 +40,20 @@ describe("YieldStreamer", async () => {
     let erc20Factory: ContractFactory;
     let stakingFactory: ContractFactory;
     let mgmtFactory: ContractFactory;
-    let sOhmFactory: ContractFactory;
-    let gOhmFactory: ContractFactory;
+    let sMGMTFactory: ContractFactory;
+    let gMGMTFactory: ContractFactory;
     let treasuryFactory: ContractFactory;
     let distributorFactory: ContractFactory;
     let authFactory: ContractFactory;
     let yieldStreamerFactory: ContractFactory;
 
-    let auth: OlympusAuthority;
+    let auth: FydeAuthority;
     let dai: DAI;
-    let mgmt: OlympusERC20Token;
-    let sOhm: SOlympus;
-    let staking: OlympusStaking;
-    let gOhm: GOHM;
-    let treasury: OlympusTreasury;
+    let mgmt: FydeERC20Token;
+    let sMGMT: SFyde;
+    let staking: FydeStaking;
+    let gMGMT: GMGMT;
+    let treasury: FydeTreasury;
     let distributor: Distributor;
     let yieldStreamer: YieldStreamer;
     let sushiRouter: FakeContract<IUniswapV2Router>;
@@ -61,13 +61,13 @@ describe("YieldStreamer", async () => {
 
     before(async () => {
         [deployer, alice, bob] = await ethers.getSigners();
-        authFactory = await ethers.getContractFactory("OlympusAuthority");
+        authFactory = await ethers.getContractFactory("FydeAuthority");
         erc20Factory = await ethers.getContractFactory("DAI");
-        stakingFactory = await ethers.getContractFactory("OlympusStaking");
-        mgmtFactory = await ethers.getContractFactory("OlympusERC20Token");
-        sOhmFactory = await ethers.getContractFactory("sOlympus");
-        gOhmFactory = await ethers.getContractFactory("gOHM");
-        treasuryFactory = await ethers.getContractFactory("OlympusTreasury");
+        stakingFactory = await ethers.getContractFactory("FydeStaking");
+        mgmtFactory = await ethers.getContractFactory("FydeERC20Token");
+        sMGMTFactory = await ethers.getContractFactory("sFyde");
+        gMGMTFactory = await ethers.getContractFactory("gMGMT");
+        treasuryFactory = await ethers.getContractFactory("FydeTreasury");
         distributorFactory = await ethers.getContractFactory("Distributor");
         yieldStreamerFactory = await ethers.getContractFactory("YieldStreamer");
         sushiRouter = await smock.fake<IUniswapV2Router>("IUniswapV2Router");
@@ -81,27 +81,27 @@ describe("YieldStreamer", async () => {
             deployer.address,
             deployer.address,
             deployer.address
-        )) as OlympusAuthority;
-        mgmt = (await mgmtFactory.deploy(auth.address)) as OlympusERC20Token;
-        sOhm = (await sOhmFactory.deploy()) as SOlympus;
-        gOhm = (await gOhmFactory.deploy(deployer.address, sOhm.address)) as GOHM;
+        )) as FydeAuthority;
+        mgmt = (await mgmtFactory.deploy(auth.address)) as FydeERC20Token;
+        sMGMT = (await sMGMTFactory.deploy()) as SFyde;
+        gMGMT = (await gMGMTFactory.deploy(deployer.address, sMGMT.address)) as GMGMT;
         const blockNumBefore = await ethers.provider.getBlockNumber();
         const blockBefore = await ethers.provider.getBlock(blockNumBefore);
         staking = (await stakingFactory.deploy(
             mgmt.address,
-            sOhm.address,
-            gOhm.address,
+            sMGMT.address,
+            gMGMT.address,
             "28800", // 1 epoch = 8 hours
             "1",
             blockBefore.timestamp + 28800, // First epoch in 8 hours. Avoids first deposit to set epoch.distribute wrong
             auth.address
-        )) as OlympusStaking;
-        await gOhm.migrate(staking.address, sOhm.address);
+        )) as FydeStaking;
+        await gMGMT.migrate(staking.address, sMGMT.address);
         treasury = (await treasuryFactory.deploy(
             mgmt.address,
             "0",
             auth.address
-        )) as OlympusTreasury;
+        )) as FydeTreasury;
         distributor = (await distributorFactory.deploy(
             treasury.address,
             mgmt.address,
@@ -110,8 +110,8 @@ describe("YieldStreamer", async () => {
             initialRewardRate
         )) as Distributor;
         yieldStreamer = (await yieldStreamerFactory.deploy(
-            gOhm.address,
-            sOhm.address,
+            gMGMT.address,
+            sMGMT.address,
             mgmt.address,
             dai.address,
             sushiRouter.address,
@@ -129,17 +129,17 @@ describe("YieldStreamer", async () => {
         await dai.mint(deployer.address, initialMint);
         await dai.approve(treasury.address, LARGE_APPROVAL);
 
-        // Needed to spend deployer's OHM
+        // Needed to spend deployer's MGMT
         await mgmt.approve(staking.address, LARGE_APPROVAL);
 
-        // To get past OHM contract guards
+        // To get past MGMT contract guards
         await auth.pushVault(treasury.address, true);
 
-        // Initialization for sOHM contract.
+        // Initialization for sMGMT contract.
         // Set index to 10
-        await sOhm.setIndex("10000000000");
-        await sOhm.setgOHM(gOhm.address);
-        await sOhm.initialize(staking.address, treasury.address);
+        await sMGMT.setIndex("10000000000");
+        await sMGMT.setgMGMT(gMGMT.address);
+        await sMGMT.initialize(staking.address, treasury.address);
 
         // Set distributor staking contract
         await staking.setDistributor(distributor.address);
@@ -153,37 +153,37 @@ describe("YieldStreamer", async () => {
         // queue and toggle DAI as reserve token
         await treasury.enable("2", dai.address, ZERO_ADDRESS);
 
-        // Deposit 10,000 DAI to treasury, 1,000 OHM gets minted to deployer with 9000 as excess reserves (ready to be minted)
-        await treasury.connect(deployer).deposit(toDecimals(10000), dai.address, toOhm(9000));
+        // Deposit 10,000 DAI to treasury, 1,000 MGMT gets minted to deployer with 9000 as excess reserves (ready to be minted)
+        await treasury.connect(deployer).deposit(toDecimals(10000), dai.address, toMGMT(9000));
 
-        // Get sOHM in deployer wallet
-        const smgmtAmount = toOhm(1000);
+        // Get sMGMT in deployer wallet
+        const smgmtAmount = toMGMT(1000);
         await mgmt.approve(staking.address, smgmtAmount);
         await staking.stake(deployer.address, smgmtAmount, true, true);
         await triggerRebase(); // Trigger first rebase to set initial distribute amount. This rebase shouldn't update index.
 
-        // Transfer 100 sOHM to alice for testing
-        await sOhm.transfer(alice.address, toOhm(100));
+        // Transfer 100 sMGMT to alice for testing
+        await sMGMT.transfer(alice.address, toMGMT(100));
 
-        // Alice should wrap mgmt to gOhm. Should have 10gOhm
-        await sOhm.approve(staking.address, LARGE_APPROVAL);
-        await staking.wrap(deployer.address, toOhm(500));
-        await sOhm.connect(alice).approve(staking.address, LARGE_APPROVAL);
-        await staking.connect(alice).wrap(alice.address, toOhm(100));
+        // Alice should wrap mgmt to gMGMT. Should have 10gMGMT
+        await sMGMT.approve(staking.address, LARGE_APPROVAL);
+        await staking.wrap(deployer.address, toMGMT(500));
+        await sMGMT.connect(alice).approve(staking.address, LARGE_APPROVAL);
+        await staking.connect(alice).wrap(alice.address, toMGMT(100));
 
-        await gOhm.connect(alice).approve(yieldStreamer.address, LARGE_APPROVAL);
-        await gOhm.connect(deployer).approve(yieldStreamer.address, LARGE_APPROVAL);
+        await gMGMT.connect(alice).approve(yieldStreamer.address, LARGE_APPROVAL);
+        await gMGMT.connect(deployer).approve(yieldStreamer.address, LARGE_APPROVAL);
         await dai.connect(deployer).transfer(yieldStreamer.address, toDecimals(1000000)); // Give dai to yieldstreamer so it has dai to pay out. Mocking the mgmt dai swap with smock.
     });
 
     it("should rebase properly", async () => {
-        await expect(await sOhm.index()).is.equal("10000000000");
+        await expect(await sMGMT.index()).is.equal("10000000000");
         await triggerRebase();
-        await expect(await sOhm.index()).is.equal("10010000000");
+        await expect(await sMGMT.index()).is.equal("10010000000");
         await triggerRebase();
-        await expect(await sOhm.index()).is.equal("10020010000");
+        await expect(await sMGMT.index()).is.equal("10020010000");
         await triggerRebase();
-        await expect(await sOhm.index()).is.equal("10030030010");
+        await expect(await sMGMT.index()).is.equal("10030030010");
     });
 
     it("Upkeep sends correct amount of dai to recipients. Deposit and Upkeep info updated correctly.", async () => {
@@ -197,7 +197,7 @@ describe("YieldStreamer", async () => {
         ).to.emit(yieldStreamer, "Deposited");
 
         await expect(await yieldStreamer.idCount()).is.equal("2");
-        await expect((await yieldStreamer.depositInfo(0)).principalAmount).is.equal(toOhm(100));
+        await expect((await yieldStreamer.depositInfo(0)).principalAmount).is.equal(toMGMT(100));
         await expect((await yieldStreamer.recipientInfo(0)).recipientAddress).is.equal(bob.address);
         await expect((await yieldStreamer.recipientInfo(0)).paymentInterval).is.equal(1);
         await expect((await yieldStreamer.recipientInfo(0)).userMinimumAmountThreshold).is.equal(
@@ -207,11 +207,11 @@ describe("YieldStreamer", async () => {
 
         await triggerRebase();
 
-        const expectedYield = await gOhm.balanceTo(toOhm(0.1)); // yield is 0.1sOhm convert this to gOhm
+        const expectedYield = await gMGMT.balanceTo(toMGMT(0.1)); // yield is 0.1sMGMT convert this to gMGMT
         const actualYield = await yieldStreamer.redeemableBalance(0);
-        await expect(actualYield).is.closeTo(expectedYield, 1); // 1 digit off due to precision issues of converting gOhm to sOhm and back to gOhm.
+        await expect(actualYield).is.closeTo(expectedYield, 1); // 1 digit off due to precision issues of converting gMGMT to sMGMT and back to gMGMT.
 
-        const amountOfDai = toOhm(0.2).mul(100).mul(1000000000).mul(999).div(1000); // Mock the amount of Dai coming out of swap.
+        const amountOfDai = toMGMT(0.2).mul(100).mul(1000000000).mul(999).div(1000); // Mock the amount of Dai coming out of swap.
         oracleRouter.latestRoundData.returns([0, amountOfDai, 0, 0, 0]);
         sushiRouter.swapExactTokensForTokens.returns([BigNumber.from("0"), amountOfDai]);
 
@@ -221,28 +221,28 @@ describe("YieldStreamer", async () => {
         await expect(await dai.balanceOf(alice.address)).is.equal(amountOfDai.div(2));
     });
 
-    it("Adding to deposit calculates agnostic with changing index. Withdrawing does not withdraw more gOhm than there is.", async () => {
-        await yieldStreamer.connect(alice).deposit(toDecimals(5), alice.address, 1, toDecimals(5)); //5 gOhm deposited, 50 sOhm principal
+    it("Adding to deposit calculates agnostic with changing index. Withdrawing does not withdraw more gMGMT than there is.", async () => {
+        await yieldStreamer.connect(alice).deposit(toDecimals(5), alice.address, 1, toDecimals(5)); //5 gMGMT deposited, 50 sMGMT principal
         await triggerRebase();
 
-        await expect((await yieldStreamer.depositInfo(0)).principalAmount).is.equal(toOhm(50)); // still should be 100sOhm but less gOhm
-        await expect((await yieldStreamer.depositInfo(0)).agnosticAmount).is.equal(toDecimals(5)); // still should be 10gOhm. But its more than 100 sOhm
+        await expect((await yieldStreamer.depositInfo(0)).principalAmount).is.equal(toMGMT(50)); // still should be 100sMGMT but less gMGMT
+        await expect((await yieldStreamer.depositInfo(0)).agnosticAmount).is.equal(toDecimals(5)); // still should be 10gMGMT. But its more than 100 sMGMT
 
-        await yieldStreamer.connect(alice).addToDeposit(0, toDecimals(5)); // add another 5gOhm or 50.05 sOhm since index change
-        await expect((await yieldStreamer.depositInfo(0)).principalAmount).is.equal(toOhm(100.05)); // total sOhm should be 100.05
-        await expect((await yieldStreamer.depositInfo(0)).agnosticAmount).is.equal(toDecimals(10)); // agnostic should be 20 gOhm or 200.2 sOhm.
+        await yieldStreamer.connect(alice).addToDeposit(0, toDecimals(5)); // add another 5gMGMT or 50.05 sMGMT since index change
+        await expect((await yieldStreamer.depositInfo(0)).principalAmount).is.equal(toMGMT(100.05)); // total sMGMT should be 100.05
+        await expect((await yieldStreamer.depositInfo(0)).agnosticAmount).is.equal(toDecimals(10)); // agnostic should be 20 gMGMT or 200.2 sMGMT.
 
-        const expectedYield = await gOhm.balanceTo(toOhm(0.05)); // yield is 0.05sOhm convert this to gOhm
+        const expectedYield = await gMGMT.balanceTo(toMGMT(0.05)); // yield is 0.05sMGMT convert this to gMGMT
         const actualYield = await yieldStreamer.redeemableBalance(0);
-        await expect(actualYield).is.closeTo(expectedYield, 1); // 1 digit off due to precision issues of converting gOhm to sOhm and back to gOhm.
+        await expect(actualYield).is.closeTo(expectedYield, 1); // 1 digit off due to precision issues of converting gMGMT to sMGMT and back to gMGMT.
 
         await yieldStreamer.connect(alice).withdrawYield(0);
-        await expect(await gOhm.balanceOf(alice.address)).is.equal(actualYield);
+        await expect(await gMGMT.balanceOf(alice.address)).is.equal(actualYield);
 
-        let principalInGOHM = await yieldStreamer.getPrincipalInGOHM(0);
+        let principalInGMGMT = await yieldStreamer.getPrincipalInGMGMT(0);
         await yieldStreamer.connect(alice).withdrawPrincipal(0, toDecimals(10));
-        await expect(await gOhm.balanceOf(alice.address)).is.equal(
-            principalInGOHM.add(actualYield)
+        await expect(await gMGMT.balanceOf(alice.address)).is.equal(
+            principalInGMGMT.add(actualYield)
         );
     });
 
@@ -252,27 +252,27 @@ describe("YieldStreamer", async () => {
             .deposit(toDecimals(10), alice.address, 1, toDecimals(5));
         await yieldStreamer.connect(alice).deposit(toDecimals(10), alice.address, 1, toDecimals(5));
         await triggerRebase();
-        await expect(await gOhm.balanceOf(alice.address)).is.equal("0");
+        await expect(await gMGMT.balanceOf(alice.address)).is.equal("0");
 
         let expectedYield = await yieldStreamer.redeemableBalance(0);
 
         await yieldStreamer.connect(alice).withdrawAllYield();
         await expect(await yieldStreamer.redeemableBalance(0)).is.equal(0);
         await expect(await yieldStreamer.redeemableBalance(1)).is.equal(0);
-        await expect(await gOhm.balanceOf(alice.address)).is.equal(expectedYield.mul(2));
+        await expect(await gMGMT.balanceOf(alice.address)).is.equal(expectedYield.mul(2));
     });
 
     it("withdrawing yield on behalf of others", async () => {
         await yieldStreamer.connect(alice).deposit(toDecimals(10), alice.address, 1, toDecimals(5));
         await triggerRebase();
-        await expect(await gOhm.balanceOf(alice.address)).is.equal("0");
+        await expect(await gMGMT.balanceOf(alice.address)).is.equal("0");
         let expectedYield = await yieldStreamer.redeemableBalance(0);
 
         await yieldStreamer.connect(deployer).givePermissionToRedeem(bob.address);
 
         await yieldStreamer.connect(bob).redeemYieldOnBehalfOf(0);
         await expect(await yieldStreamer.redeemableBalance(0)).is.equal(0);
-        await expect(await gOhm.balanceOf(alice.address)).is.equal(expectedYield);
+        await expect(await gMGMT.balanceOf(alice.address)).is.equal(expectedYield);
 
         await triggerRebase();
         await yieldStreamer.connect(deployer).revokePermissionToRedeem(bob.address);
@@ -285,7 +285,7 @@ describe("YieldStreamer", async () => {
             .deposit(toDecimals(10), alice.address, 1, toDecimals(5));
         await yieldStreamer.connect(alice).deposit(toDecimals(10), alice.address, 1, toDecimals(5));
         await triggerRebase();
-        await expect(await gOhm.balanceOf(alice.address)).is.equal("0");
+        await expect(await gMGMT.balanceOf(alice.address)).is.equal("0");
         let expectedYield = await yieldStreamer.redeemableBalance(0);
 
         await yieldStreamer.connect(deployer).givePermissionToRedeem(bob.address);
@@ -293,30 +293,30 @@ describe("YieldStreamer", async () => {
 
         await expect(await yieldStreamer.redeemableBalance(0)).is.equal(0);
         await expect(await yieldStreamer.redeemableBalance(1)).is.equal(0);
-        await expect(await gOhm.balanceOf(alice.address)).is.equal(expectedYield.mul(2));
+        await expect(await gMGMT.balanceOf(alice.address)).is.equal(expectedYield.mul(2));
     });
 
     it("withdrawing part of principal", async () => {
-        await yieldStreamer.connect(alice).deposit(toDecimals(10), alice.address, 1, toDecimals(5)); //10gOhm deposited. 100sOhm principal
+        await yieldStreamer.connect(alice).deposit(toDecimals(10), alice.address, 1, toDecimals(5)); //10gMGMT deposited. 100sMGMT principal
         await triggerRebase();
-        await expect(await gOhm.balanceOf(alice.address)).is.equal("0");
+        await expect(await gMGMT.balanceOf(alice.address)).is.equal("0");
 
         await expect(
             await yieldStreamer.connect(alice).withdrawPrincipal(0, toDecimals(5))
-        ).to.emit(yieldStreamer, "Withdrawn"); // withdraw 5 gOhm principal should be a bit less than 100sOhm since rebase happened
-        await expect(await gOhm.balanceOf(alice.address)).is.equal(toDecimals(5));
-        await expect((await yieldStreamer.depositInfo(0)).principalAmount).is.equal(toOhm(49.95));
+        ).to.emit(yieldStreamer, "Withdrawn"); // withdraw 5 gMGMT principal should be a bit less than 100sMGMT since rebase happened
+        await expect(await gMGMT.balanceOf(alice.address)).is.equal(toDecimals(5));
+        await expect((await yieldStreamer.depositInfo(0)).principalAmount).is.equal(toMGMT(49.95));
     });
 
     it("withdrawing all of principal", async () => {
-        await yieldStreamer.connect(alice).deposit(toDecimals(10), alice.address, 1, toDecimals(5)); //10gOhm deposited. 100sOhm principal
+        await yieldStreamer.connect(alice).deposit(toDecimals(10), alice.address, 1, toDecimals(5)); //10gMGMT deposited. 100sMGMT principal
         await triggerRebase();
-        await expect(await gOhm.balanceOf(alice.address)).is.equal("0");
+        await expect(await gMGMT.balanceOf(alice.address)).is.equal("0");
 
         await expect(
             await yieldStreamer.connect(alice).withdrawPrincipal(0, toDecimals(100))
-        ).to.emit(yieldStreamer, "Withdrawn"); // withdraw 5 gOhm principal should be a bit less than 100sOhm since rebase happened
-        await expect(await gOhm.balanceOf(alice.address)).is.equal(toDecimals(10));
+        ).to.emit(yieldStreamer, "Withdrawn"); // withdraw 5 gMGMT principal should be a bit less than 100sMGMT since rebase happened
+        await expect(await gMGMT.balanceOf(alice.address)).is.equal(toDecimals(10));
         await expect(yieldStreamer.activeDepositIds(0)).to.be.reverted;
     });
 
@@ -326,7 +326,7 @@ describe("YieldStreamer", async () => {
             .deposit(toDecimals(10), alice.address, 1, toDecimals(1000));
         await triggerRebase();
 
-        const amountOfDai = toOhm(0.1).mul(100).mul(1000000000); // Mock the amount of Dai coming out of swap. 0.1 Ohm should give roughly 10 DAi. Assuming Ohm=100DAI
+        const amountOfDai = toMGMT(0.1).mul(100).mul(1000000000); // Mock the amount of Dai coming out of swap. 0.1 MGMT should give roughly 10 DAi. Assuming MGMT=100DAI
         oracleRouter.latestRoundData.returns([0, amountOfDai, 0, 0, 0]);
         sushiRouter.swapExactTokensForTokens.returns([BigNumber.from("0"), amountOfDai]);
 

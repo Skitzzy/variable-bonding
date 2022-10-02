@@ -12,8 +12,8 @@ import {
     ISwapRouter,
     LUSDAllocator,
     LUSDAllocator__factory,
-    OlympusAuthority,
-    OlympusAuthority__factory,
+    FydeAuthority,
+    FydeAuthority__factory,
 } from "../../types";
 const { fork_network, fork_reset } = require("../utils/network_fork");
 const impersonateAccount = require("../utils/impersonate_account");
@@ -43,7 +43,7 @@ describe("LUSDAllocator", () => {
         let daiTokenFake: FakeContract<IERC20>;
         let swapRouterFake: FakeContract<ISwapRouter>;
         let lusdAllocator: LUSDAllocator;
-        let authority: OlympusAuthority;
+        let authority: FydeAuthority;
 
         beforeEach(async () => {
             [owner, governor, guardian, other, alice, bob] = await ethers.getSigners();
@@ -59,7 +59,7 @@ describe("LUSDAllocator", () => {
             wethTokenFake = await smock.fake<IERC20>("contracts/interfaces/IERC20.sol:IERC20");
             daiTokenFake = await smock.fake<IERC20>("contracts/interfaces/IERC20.sol:IERC20");
             swapRouterFake = await smock.fake<ISwapRouter>("ISwapRouter");
-            authority = await new OlympusAuthority__factory(owner).deploy(
+            authority = await new FydeAuthority__factory(owner).deploy(
                 governor.address,
                 guardian.address,
                 owner.address,
@@ -345,7 +345,7 @@ describe("LUSDAllocator", () => {
         before(async () => {
             await fork_network(13797676);
 
-            const OLYMPUS_AUTHORITY = "0x1c21F8EA7e39E2BA00BC12d2968D63F4acb38b7A";
+            const Fyde_AUTHORITY = "0x1c21F8EA7e39E2BA00BC12d2968D63F4acb38b7A";
             const TREASURY_ADDRESS = "0x31f8cc382c9898b273eff4e0b7626a6987c846e8";
             const TREASURY_MANAGER = "0x245cc372c84b3645bf0ffe6538620b04a217988b"; //This is also our guardian
             const LQTY_TOKEN_ADDRESS = "0x6DEA81C8171D0bA574754EF6F8b412F2Ed88c54D";
@@ -356,7 +356,7 @@ describe("LUSDAllocator", () => {
 
             [owner] = await ethers.getSigners();
             allocator = await new LUSDAllocator__factory(owner).deploy(
-                OLYMPUS_AUTHORITY,
+                Fyde_AUTHORITY,
                 TREASURY_ADDRESS,
                 LUSD_TOKEN_ADDRESS,
                 LQTY_TOKEN_ADDRESS,

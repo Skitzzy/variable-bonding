@@ -1,7 +1,7 @@
 {
-  "name": "olympus-contracts",
+  "name": "Fyde-contracts",
   "version": "1.0.0",
-  "description": "Smart Contracts for Olympus",
+  "description": "Smart Contracts for Fyde",
   "directories": {
     "test": "test"
   },
@@ -69,11 +69,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/OlympusDAO/olympus-contracts.git"
+    "url": "git+https://github.com/FydeDAO/Fyde-contracts.git"
   },
   "author": "",
   "bugs": {
-    "url": "https://github.com/OlympusDAO/olympus-contracts/issues"
+    "url": "https://github.com/FydeDAO/Fyde-contracts/issues"
   },
-  "homepage": "https://github.com/OlympusDAO/olympus-contracts#readme"
+  "homepage": "https://github.com/FydeDAO/Fyde-contracts#readme"
 }

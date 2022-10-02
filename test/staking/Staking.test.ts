@@ -5,32 +5,32 @@ const { BigNumber } = ethers;
 import { FakeContract, smock } from "@defi-wonderland/smock";
 import {
     IDistributor,
-    IgOHM,
-    IsOHM,
-    IOHM,
-    OlympusStaking,
-    OlympusStaking__factory,
-    OlympusAuthority,
-    OlympusAuthority__factory,
+    IgMGMT,
+    IsMGMT,
+    IMGMT,
+    FydeStaking,
+    FydeStaking__factory,
+    FydeAuthority,
+    FydeAuthority__factory,
 } from "../../types";
 
 chai.use(smock.matchers);
 
 const ZERO_ADDRESS = ethers.utils.getAddress("0x0000000000000000000000000000000000000000");
 
-describe("OlympusStaking", () => {
+describe("FydeStaking", () => {
     let owner: SignerWithAddress;
     let governor: SignerWithAddress;
     let guardian: SignerWithAddress;
     let alice: SignerWithAddress;
     let bob: SignerWithAddress;
     let other: SignerWithAddress;
-    let mgmtFake: FakeContract<IOHM>;
-    let sOHMFake: FakeContract<IsOHM>;
-    let gOHMFake: FakeContract<IgOHM>;
+    let mgmtFake: FakeContract<IMGMT>;
+    let sMGMTFake: FakeContract<IsMGMT>;
+    let gMGMTFake: FakeContract<IgMGMT>;
     let distributorFake: FakeContract<IDistributor>;
-    let staking: OlympusStaking;
-    let authority: OlympusAuthority;
+    let staking: FydeStaking;
+    let authority: FydeAuthority;
 
     const EPOCH_LENGTH = 2200;
     const EPOCH_NUMBER = 1;
@@ -38,12 +38,12 @@ describe("OlympusStaking", () => {
 
     beforeEach(async () => {
         [owner, governor, guardian, alice, bob, other] = await ethers.getSigners();
-        mgmtFake = await smock.fake<IOHM>("IOHM");
-        gOHMFake = await smock.fake<IgOHM>("IgOHM");
-        // need to be specific because IsOHM is also defined in OLD
-        sOHMFake = await smock.fake<IsOHM>("contracts/interfaces/IsOHM.sol:IsOHM");
+        mgmtFake = await smock.fake<IMGMT>("IMGMT");
+        gMGMTFake = await smock.fake<IgMGMT>("IgMGMT");
+        // need to be specific because IsMGMT is also defined in OLD
+        sMGMTFake = await smock.fake<IsMGMT>("contracts/interfaces/IsMGMT.sol:IsMGMT");
         distributorFake = await smock.fake<IDistributor>("IDistributor");
-        authority = await new OlympusAuthority__factory(owner).deploy(
+        authority = await new FydeAuthority__factory(owner).deploy(
             governor.address,
             guardian.address,
             owner.address,
@@ -53,18 +53,18 @@ describe("OlympusStaking", () => {
 
     describe("constructor", () => {
         it("can be constructed", async () => {
-            staking = await new OlympusStaking__factory(owner).deploy(
+            staking = await new FydeStaking__factory(owner).deploy(
                 mgmtFake.address,
-                sOHMFake.address,
-                gOHMFake.address,
+                sMGMTFake.address,
+                gMGMTFake.address,
                 EPOCH_LENGTH,
                 EPOCH_NUMBER,
                 FUTURE_END_TIME,
                 authority.address
             );
 
-            expect(await staking.OHM()).to.equal(mgmtFake.address);
-            expect(await staking.sOHM()).to.equal(sOHMFake.address);
+            expect(await staking.MGMT()).to.equal(mgmtFake.address);
+            expect(await staking.sMGMT()).to.equal(sMGMTFake.address);
             const epoch = await staking.epoch();
             expect((epoch as any)._length).to.equal(BigNumber.from(EPOCH_LENGTH));
             expect(epoch.number).to.equal(BigNumber.from(EPOCH_NUMBER));
@@ -73,12 +73,12 @@ describe("OlympusStaking", () => {
             expect(await authority.governor()).to.equal(governor.address);
         });
 
-        it("will not allow a 0x0 OHM address", async () => {
+        it("will not allow a 0x0 MGMT address", async () => {
             await expect(
-                new OlympusStaking__factory(owner).deploy(
+                new FydeStaking__factory(owner).deploy(
                     ZERO_ADDRESS,
-                    sOHMFake.address,
-                    gOHMFake.address,
+                    sMGMTFake.address,
+                    gMGMTFake.address,
                     EPOCH_LENGTH,
                     EPOCH_NUMBER,
                     FUTURE_END_TIME,
@@ -87,12 +87,12 @@ describe("OlympusStaking", () => {
             ).to.be.reverted;
         });
 
-        it("will not allow a 0x0 sOHM address", async () => {
+        it("will not allow a 0x0 sMGMT address", async () => {
             await expect(
-                new OlympusStaking__factory(owner).deploy(
+                new FydeStaking__factory(owner).deploy(
                     mgmtFake.address,
                     ZERO_ADDRESS,
-                    gOHMFake.address,
+                    gMGMTFake.address,
                     EPOCH_LENGTH,
                     EPOCH_NUMBER,
                     FUTURE_END_TIME,
@@ -101,11 +101,11 @@ describe("OlympusStaking", () => {
             ).to.be.reverted;
         });
 
-        it("will not allow a 0x0 gOHM address", async () => {
+        it("will not allow a 0x0 gMGMT address", async () => {
             await expect(
-                new OlympusStaking__factory(owner).deploy(
+                new FydeStaking__factory(owner).deploy(
                     mgmtFake.address,
-                    sOHMFake.address,
+                    sMGMTFake.address,
                     ZERO_ADDRESS,
                     EPOCH_LENGTH,
                     EPOCH_NUMBER,
@@ -118,10 +118,10 @@ describe("OlympusStaking", () => {
 
     describe("initialization", () => {
         beforeEach(async () => {
-            staking = await new OlympusStaking__factory(owner).deploy(
+            staking = await new FydeStaking__factory(owner).deploy(
                 mgmtFake.address,
-                sOHMFake.address,
-                gOHMFake.address,
+                sMGMTFake.address,
+                gMGMTFake.address,
                 EPOCH_LENGTH,
                 EPOCH_NUMBER,
                 FUTURE_END_TIME,
@@ -168,10 +168,10 @@ describe("OlympusStaking", () => {
 
     describe("post-initialization", () => {
         async function deployStaking(nextRebaseBlock: any) {
-            staking = await new OlympusStaking__factory(owner).deploy(
+            staking = await new FydeStaking__factory(owner).deploy(
                 mgmtFake.address,
-                sOHMFake.address,
-                gOHMFake.address,
+                sMGMTFake.address,
+                gMGMTFake.address,
                 EPOCH_LENGTH,
                 EPOCH_NUMBER,
                 nextRebaseBlock,
@@ -197,8 +197,8 @@ describe("OlympusStaking", () => {
                 mgmtFake.transferFrom
                     .whenCalledWith(alice.address, staking.address, amount)
                     .returns(true);
-                sOHMFake.gonsForBalance.whenCalledWith(amount).returns(gons);
-                sOHMFake.balanceForGons.whenCalledWith(gons).returns(amount);
+                sMGMTFake.gonsForBalance.whenCalledWith(amount).returns(gons);
+                sMGMTFake.balanceForGons.whenCalledWith(gons).returns(amount);
 
                 await staking.connect(alice).stake(alice.address, amount, rebasing, claim);
 
@@ -212,7 +212,7 @@ describe("OlympusStaking", () => {
                 expect(warmupInfo.lock).to.equal(false);
             });
 
-            it("exchanges OHM for sOHM when claim is true and rebasing is true", async () => {
+            it("exchanges MGMT for sMGMT when claim is true and rebasing is true", async () => {
                 const amount = 1000;
                 const rebasing = true;
                 const claim = true;
@@ -220,16 +220,16 @@ describe("OlympusStaking", () => {
                 mgmtFake.transferFrom
                     .whenCalledWith(alice.address, staking.address, amount)
                     .returns(true);
-                sOHMFake.transfer.whenCalledWith(alice.address, amount).returns(true);
+                sMGMTFake.transfer.whenCalledWith(alice.address, amount).returns(true);
 
                 await staking.connect(alice).stake(alice.address, amount, rebasing, claim);
 
                 // nothing is in warmup
-                sOHMFake.balanceForGons.whenCalledWith(0).returns(0);
+                sMGMTFake.balanceForGons.whenCalledWith(0).returns(0);
                 expect(await staking.supplyInWarmup()).to.equal(0);
             });
 
-            it("exchanges OHM for newly minted gOHM when claim is true and rebasing is true", async () => {
+            it("exchanges MGMT for newly minted gMGMT when claim is true and rebasing is true", async () => {
                 const amount = 1000;
                 const indexedAmount = 10000;
                 const rebasing = false;
@@ -238,11 +238,11 @@ describe("OlympusStaking", () => {
                 mgmtFake.transferFrom
                     .whenCalledWith(alice.address, staking.address, amount)
                     .returns(true);
-                gOHMFake.balanceTo.whenCalledWith(amount).returns(indexedAmount);
+                gMGMTFake.balanceTo.whenCalledWith(amount).returns(indexedAmount);
 
                 await staking.connect(alice).stake(alice.address, amount, rebasing, claim);
 
-                expect(gOHMFake.mint).to.be.calledWith(alice.address, indexedAmount);
+                expect(gMGMTFake.mint).to.be.calledWith(alice.address, indexedAmount);
             });
 
             it("adds amount to warmup when claim is true and warmup period > 0, regardless of rebasing", async () => {
@@ -255,8 +255,8 @@ describe("OlympusStaking", () => {
                 mgmtFake.transferFrom
                     .whenCalledWith(alice.address, staking.address, amount)
                     .returns(true);
-                sOHMFake.gonsForBalance.whenCalledWith(amount).returns(gons);
-                sOHMFake.balanceForGons.whenCalledWith(gons).returns(amount);
+                sMGMTFake.gonsForBalance.whenCalledWith(amount).returns(gons);
+                sMGMTFake.balanceForGons.whenCalledWith(gons).returns(amount);
 
                 await staking.connect(governor).setWarmupLength(1);
                 await staking.connect(alice).stake(alice.address, amount, true, true);
@@ -279,7 +279,7 @@ describe("OlympusStaking", () => {
                 mgmtFake.transferFrom
                     .whenCalledWith(alice.address, staking.address, amount)
                     .returns(true);
-                sOHMFake.gonsForBalance.whenCalledWith(amount).returns(gons);
+                sMGMTFake.gonsForBalance.whenCalledWith(amount).returns(gons);
 
                 await staking.connect(alice).toggleLock();
 
@@ -297,8 +297,8 @@ describe("OlympusStaking", () => {
                 mgmtFake.transferFrom
                     .whenCalledWith(alice.address, staking.address, amount)
                     .returns(true);
-                sOHMFake.gonsForBalance.whenCalledWith(amount).returns(gons);
-                sOHMFake.balanceForGons.whenCalledWith(gons).returns(amount);
+                sMGMTFake.gonsForBalance.whenCalledWith(amount).returns(gons);
+                sMGMTFake.balanceForGons.whenCalledWith(gons).returns(amount);
 
                 await staking.connect(alice).toggleLock();
 
@@ -315,38 +315,38 @@ describe("OlympusStaking", () => {
                 mgmtFake.transferFrom
                     .whenCalledWith(alice.address, staking.address, amount)
                     .returns(true);
-                sOHMFake.gonsForBalance.whenCalledWith(amount).returns(gons);
+                sMGMTFake.gonsForBalance.whenCalledWith(amount).returns(gons);
                 await staking.connect(wallet).stake(wallet.address, amount, rebasing, claim);
             }
 
-            it("transfers sOHM when rebasing is true", async () => {
+            it("transfers sMGMT when rebasing is true", async () => {
                 const amount = 1000;
                 const gons = 10;
                 await createClaim(alice, amount, gons);
 
-                sOHMFake.transfer.whenCalledWith(alice.address, amount).returns(true);
-                sOHMFake.balanceForGons.whenCalledWith(gons).returns(amount);
+                sMGMTFake.transfer.whenCalledWith(alice.address, amount).returns(true);
+                sMGMTFake.balanceForGons.whenCalledWith(gons).returns(amount);
 
                 await staking.connect(alice).claim(alice.address, true);
 
-                sOHMFake.balanceForGons.whenCalledWith(0).returns(0);
+                sMGMTFake.balanceForGons.whenCalledWith(0).returns(0);
                 expect(await staking.supplyInWarmup()).to.equal(0);
             });
 
-            it("mints gOHM when rebasing is false", async () => {
+            it("mints gMGMT when rebasing is false", async () => {
                 const indexedAmount = 10000;
                 const amount = 1000;
                 const gons = 10;
                 await createClaim(alice, amount, gons);
 
-                gOHMFake.balanceTo.whenCalledWith(amount).returns(indexedAmount);
-                sOHMFake.balanceForGons.whenCalledWith(gons).returns(amount);
+                gMGMTFake.balanceTo.whenCalledWith(amount).returns(indexedAmount);
+                sMGMTFake.balanceForGons.whenCalledWith(gons).returns(amount);
 
                 await staking.connect(alice).claim(alice.address, false);
 
-                expect(gOHMFake.mint).to.be.calledWith(alice.address, indexedAmount);
+                expect(gMGMTFake.mint).to.be.calledWith(alice.address, indexedAmount);
 
-                sOHMFake.balanceForGons.whenCalledWith(0).returns(0);
+                sMGMTFake.balanceForGons.whenCalledWith(0).returns(0);
                 expect(await staking.supplyInWarmup()).to.equal(0);
             });
 
@@ -367,20 +367,20 @@ describe("OlympusStaking", () => {
                 await createClaim(alice, amount, gons);
                 await staking.connect(alice).toggleLock();
 
-                sOHMFake.transfer.whenCalledWith(alice.address, amount).returns(true);
-                sOHMFake.balanceForGons.whenCalledWith(gons).returns(amount);
+                sMGMTFake.transfer.whenCalledWith(alice.address, amount).returns(true);
+                sMGMTFake.balanceForGons.whenCalledWith(gons).returns(amount);
 
                 await staking.connect(alice).claim(alice.address, true);
 
-                sOHMFake.balanceForGons.whenCalledWith(0).returns(0);
+                sMGMTFake.balanceForGons.whenCalledWith(0).returns(0);
                 expect(await staking.supplyInWarmup()).to.equal(0);
             });
 
             it("does nothing when there is nothing to claim", async () => {
                 await staking.connect(bob).claim(bob.address, true);
 
-                expect(sOHMFake.transfer).to.not.have.been.called;
-                expect(gOHMFake.mint).to.not.have.been.called;
+                expect(sMGMTFake.transfer).to.not.have.been.called;
+                expect(gMGMTFake.mint).to.not.have.been.called;
             });
 
             it("does nothing when the warmup isn't over", async () => {
@@ -389,8 +389,8 @@ describe("OlympusStaking", () => {
 
                 await staking.connect(alice).claim(alice.address, true);
 
-                expect(sOHMFake.transfer).to.not.have.been.called;
-                expect(gOHMFake.mint).to.not.have.been.called;
+                expect(sMGMTFake.transfer).to.not.have.been.called;
+                expect(gMGMTFake.mint).to.not.have.been.called;
             });
         });
 
@@ -407,19 +407,19 @@ describe("OlympusStaking", () => {
                 mgmtFake.transferFrom
                     .whenCalledWith(alice.address, staking.address, amount)
                     .returns(true);
-                sOHMFake.gonsForBalance.whenCalledWith(amount).returns(gons);
+                sMGMTFake.gonsForBalance.whenCalledWith(amount).returns(gons);
 
                 await staking.connect(alice).stake(alice.address, amount, rebasing, claim);
             });
 
-            it("removes stake from warmup and returns OHM", async () => {
+            it("removes stake from warmup and returns MGMT", async () => {
                 mgmtFake.transfer.returns(true);
 
                 await staking.connect(alice).forfeit();
 
                 expect(mgmtFake.transfer).to.be.calledWith(alice.address, amount);
 
-                sOHMFake.balanceForGons.whenCalledWith(0).returns(0);
+                sMGMTFake.balanceForGons.whenCalledWith(0).returns(0);
                 expect(await staking.supplyInWarmup()).to.equal(0);
             });
 
@@ -433,21 +433,21 @@ describe("OlympusStaking", () => {
         });
 
         describe("unstake", () => {
-            it("can redeem sOHM for OHM", async () => {
+            it("can redeem sMGMT for MGMT", async () => {
                 const amount = 1000;
                 const rebasing = true;
                 const claim = true;
 
                 mgmtFake.transferFrom.returns(true);
                 mgmtFake.balanceOf.returns(amount);
-                sOHMFake.transfer.returns(true);
+                sMGMTFake.transfer.returns(true);
                 await staking.connect(alice).stake(alice.address, amount, rebasing, claim);
 
-                sOHMFake.transferFrom.returns(true);
+                sMGMTFake.transferFrom.returns(true);
                 mgmtFake.transfer.returns(true);
                 await staking.connect(alice).unstake(alice.address, amount, false, rebasing);
 
-                expect(sOHMFake.transferFrom).to.be.calledWith(
+                expect(sMGMTFake.transferFrom).to.be.calledWith(
                     alice.address,
                     staking.address,
                     amount
@@ -455,7 +455,7 @@ describe("OlympusStaking", () => {
                 expect(mgmtFake.transfer).to.be.calledWith(alice.address, amount);
             });
 
-            it("can redeem gOHM for OHM", async () => {
+            it("can redeem gMGMT for MGMT", async () => {
                 const amount = 1000;
                 const indexedAmount = 10000;
                 const rebasing = false;
@@ -464,28 +464,28 @@ describe("OlympusStaking", () => {
                 mgmtFake.transferFrom.returns(true);
                 await staking.connect(alice).stake(alice.address, amount, rebasing, claim);
 
-                gOHMFake.balanceFrom.whenCalledWith(indexedAmount).returns(amount);
+                gMGMTFake.balanceFrom.whenCalledWith(indexedAmount).returns(amount);
                 mgmtFake.transfer.returns(true);
                 mgmtFake.balanceOf.returns(amount);
                 await staking.connect(alice).unstake(alice.address, indexedAmount, false, rebasing);
 
                 expect(mgmtFake.transfer).to.be.calledWith(alice.address, amount);
-                expect(gOHMFake.burn).to.be.calledWith(alice.address, indexedAmount);
+                expect(gMGMTFake.burn).to.be.calledWith(alice.address, indexedAmount);
             });
         });
 
         describe("wrap", () => {
-            it("converts sOHM into gOHM", async () => {
+            it("converts sMGMT into gMGMT", async () => {
                 const amount = 1000;
                 const indexedAmount = 10000;
 
-                gOHMFake.balanceTo.whenCalledWith(amount).returns(indexedAmount);
-                sOHMFake.transferFrom.returns(true);
+                gMGMTFake.balanceTo.whenCalledWith(amount).returns(indexedAmount);
+                sMGMTFake.transferFrom.returns(true);
 
                 await staking.connect(alice).wrap(alice.address, amount);
 
-                expect(gOHMFake.mint).to.be.calledWith(alice.address, indexedAmount);
-                expect(sOHMFake.transferFrom).to.be.calledWith(
+                expect(gMGMTFake.mint).to.be.calledWith(alice.address, indexedAmount);
+                expect(sMGMTFake.transferFrom).to.be.calledWith(
                     alice.address,
                     staking.address,
                     amount
@@ -494,17 +494,17 @@ describe("OlympusStaking", () => {
         });
 
         describe("unwrap", () => {
-            it("converts gOHM into sOHM", async () => {
+            it("converts gMGMT into sMGMT", async () => {
                 const amount = 1000;
                 const indexedAmount = 10000;
 
-                gOHMFake.balanceFrom.whenCalledWith(indexedAmount).returns(amount);
-                sOHMFake.transfer.returns(true);
+                gMGMTFake.balanceFrom.whenCalledWith(indexedAmount).returns(amount);
+                sMGMTFake.transfer.returns(true);
 
                 await staking.connect(alice).unwrap(alice.address, indexedAmount);
 
-                expect(gOHMFake.burn).to.be.calledWith(alice.address, indexedAmount);
-                expect(sOHMFake.transfer).to.be.calledWith(alice.address, amount);
+                expect(gMGMTFake.burn).to.be.calledWith(alice.address, indexedAmount);
+                expect(sMGMTFake.transfer).to.be.calledWith(alice.address, amount);
             });
         });
 
@@ -536,14 +536,14 @@ describe("OlympusStaking", () => {
                 );
             });
 
-            it("when the OHM balance of the staking contract equals sOHM supply, distribute zero", async () => {
+            it("when the MGMT balance of the staking contract equals sMGMT supply, distribute zero", async () => {
                 const currentBlock = await ethers.provider.send("eth_blockNumber", []);
                 await deployStaking(currentBlock);
                 const epoch = await staking.epoch();
                 expect(BigNumber.from(currentBlock)).to.equal(BigNumber.from(epoch.end));
 
                 mgmtFake.balanceOf.whenCalledWith(staking.address).returns(10);
-                sOHMFake.circulatingSupply.returns(10);
+                sMGMTFake.circulatingSupply.returns(10);
                 await staking.connect(alice).rebase();
 
                 const nextEpoch = await staking.epoch();
@@ -557,7 +557,7 @@ describe("OlympusStaking", () => {
                 expect(BigNumber.from(currentBlock)).to.equal(BigNumber.from(epoch.end));
 
                 mgmtFake.balanceOf.whenCalledWith(staking.address).returns(10);
-                sOHMFake.circulatingSupply.returns(5);
+                sMGMTFake.circulatingSupply.returns(5);
                 await staking.connect(alice).rebase();
 
                 const nextEpoch = await staking.epoch();

@@ -3,13 +3,13 @@ const impersonateAccount = require("../utils/impersonate_account");
 const chai = require("chai");
 const { assert, expect } = require("chai");
 const { solidity } = require("ethereum-waffle");
-const { olympus } = require("../utils/olympus");
+const { Fyde } = require("../utils/Fyde");
 
 chai.use(solidity);
 
 const sushiRouter = "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F";
 const uniRouter = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
-const olympusGovernor = "0x245cc372C84B3645Bf0Ffe6538620B04a217988B";
+const FydeGovernor = "0x245cc372C84B3645Bf0Ffe6538620B04a217988B";
 
 describe("SushiMigrator", async () => {
     let governor, treasury, mgmtContract, SushiMigrator, sushiMigrator;
@@ -17,7 +17,7 @@ describe("SushiMigrator", async () => {
     beforeEach(async () => {
         await fork_network(14486473);
         treasury = await ethers.getContractAt(
-            "OlympusTreasury",
+            "FydeTreasury",
             "0x9A315BdF513367C0377FB36545857d12e85813Ef"
         );
         mgmtContract = await ethers.getContractAt(
@@ -26,20 +26,20 @@ describe("SushiMigrator", async () => {
         );
 
         SushiMigrator = await ethers.getContractFactory("SushiMigrator");
-        sushiMigrator = await SushiMigrator.deploy(olympus.authority);
+        sushiMigrator = await SushiMigrator.deploy(Fyde.authority);
 
-        impersonateAccount(olympusGovernor);
-        governor = await ethers.getSigner(olympusGovernor);
+        impersonateAccount(FydeGovernor);
+        governor = await ethers.getSigner(FydeGovernor);
     });
 
-    it("Migrate Sushi OHM/DAI pair to Uniswap OHM/DAI pair", async () => {
-        const sushiOhmDaiLpAddress = "0x055475920a8c93CfFb64d039A8205F7AcC7722d3";
-        const uniOhmDaiLpAddress = "0x1b851374b8968393c11e8fb30c2842cfc4e986a5";
+    it("Migrate Sushi MGMT/DAI pair to Uniswap MGMT/DAI pair", async () => {
+        const sushiMGMTDaiLpAddress = "0x055475920a8c93CfFb64d039A8205F7AcC7722d3";
+        const uniMGMTDaiLpAddress = "0x1b851374b8968393c11e8fb30c2842cfc4e986a5";
         const amount = "253163960111968806387";
 
         const uniswapLpContract = await ethers.getContractAt(
             "contracts/interfaces/IERC20.sol:IERC20",
-            uniOhmDaiLpAddress
+            uniMGMTDaiLpAddress
         );
         const daiContract = await ethers.getContractAt(
             "contracts/interfaces/IERC20.sol:IERC20",
@@ -57,8 +57,8 @@ describe("SushiMigrator", async () => {
             .executeTx(
                 sushiRouter,
                 uniRouter,
-                sushiOhmDaiLpAddress,
-                uniOhmDaiLpAddress,
+                sushiMGMTDaiLpAddress,
+                uniMGMTDaiLpAddress,
                 amount,
                 990,
                 900
@@ -87,14 +87,14 @@ describe("SushiMigrator", async () => {
         assert.equal(Number(lpBalBeforeTx) + Number(tx.uniPoolLpReceived), Number(lpBalAfterTx));
     });
 
-    it("Migrate Sushi OHM/ETH pair to Uniswap OHM/ETH pair", async () => {
-        const sushiOhmEthLpAddress = "0x69b81152c5A8d35A67B32A4D3772795d96CaE4da";
-        const uniOhmEthLpAddress = "0x88b8555CB3fdeE7077491e673a5bDdFB7144744f";
+    it("Migrate Sushi MGMT/ETH pair to Uniswap MGMT/ETH pair", async () => {
+        const sushiMGMTEthLpAddress = "0x69b81152c5A8d35A67B32A4D3772795d96CaE4da";
+        const uniMGMTEthLpAddress = "0x88b8555CB3fdeE7077491e673a5bDdFB7144744f";
         const amount = "1364756451373102957";
 
         const uniswapLpContract = await ethers.getContractAt(
             "contracts/interfaces/IERC20.sol:IERC20",
-            uniOhmEthLpAddress
+            uniMGMTEthLpAddress
         );
         const wethContract = await ethers.getContractAt(
             "contracts/interfaces/IERC20.sol:IERC20",
@@ -103,7 +103,7 @@ describe("SushiMigrator", async () => {
         const router = await ethers.getContractAt("IUniswapV2Router", uniRouter);
 
         const SushiMigrator = await ethers.getContractFactory("SushiMigrator");
-        const sushiMigrator = await SushiMigrator.deploy(olympus.authority);
+        const sushiMigrator = await SushiMigrator.deploy(Fyde.authority);
 
         await treasury.connect(governor).enable(3, sushiMigrator.address, sushiMigrator.address);
 
@@ -123,7 +123,7 @@ describe("SushiMigrator", async () => {
         });
         await mgmtContract.connect(user).approve(uniRouter, "1247350");
 
-        // The current price in the OHM/ETH uniswap pool isn't correct, using swapExactTokensForTokens to set the right price before proceeding.
+        // The current price in the MGMT/ETH uniswap pool isn't correct, using swapExactTokensForTokens to set the right price before proceeding.
         await router
             .connect(user)
             .swapExactTokensForTokens(
@@ -146,8 +146,8 @@ describe("SushiMigrator", async () => {
             .executeTx(
                 sushiRouter,
                 uniRouter,
-                sushiOhmEthLpAddress,
-                uniOhmEthLpAddress,
+                sushiMGMTEthLpAddress,
+                uniMGMTEthLpAddress,
                 amount,
                 990,
                 970

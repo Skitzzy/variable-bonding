@@ -1,8 +1,8 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { CONTRACTS, TREASURY_TIMELOCK } from "../constants";
-//import { DAI, FRAX, OlympusERC20Token, OlympusTreasury } from "../types";
-import { OlympusTreasury__factory } from "../../types";
+//import { DAI, FRAX, FydeERC20Token, FydeTreasury } from "../types";
+import { FydeTreasury__factory } from "../../types";
 
 const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const { deployments, getNamedAccounts, ethers } = hre;
@@ -23,7 +23,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         skipIfAlreadyDeployed: true,
     });
 
-    await OlympusTreasury__factory.connect(treasuryDeployment.address, signer);
+    await FydeTreasury__factory.connect(treasuryDeployment.address, signer);
 };
 
 func.tags = [CONTRACTS.treasury, "treasury"];

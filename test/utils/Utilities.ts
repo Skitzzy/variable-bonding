@@ -12,12 +12,12 @@ export const toDecimals = (amount: number): BigNumber => {
 };
 
 // 9 decimals conversion
-export const fromOhm = (bigNumber: BigNumber): number => {
+export const fromMGMT = (bigNumber: BigNumber): number => {
     return Number(ethers.utils.formatUnits(bigNumber, 9));
 };
 
 // 9 decimals conversion
-export const toOhm = (amount: number): BigNumber => {
+export const toMGMT = (amount: number): BigNumber => {
     return ethers.utils.parseUnits(amount.toString(), 9);
 };
 

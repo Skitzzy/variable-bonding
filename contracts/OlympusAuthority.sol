@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity >=0.7.5;
 
-import "./interfaces/IOlympusAuthority.sol";
+import "./interfaces/IFydeAuthority.sol";
 
-import "./types/OlympusAccessControlled.sol";
+import "./types/FydeAccessControlled.sol";
 
-contract OlympusAuthority is IOlympusAuthority, OlympusAccessControlled {
+contract FydeAuthority is IFydeAuthority, FydeAccessControlled {
     /* ========== STATE VARIABLES ========== */
 
     address public override governor;
@@ -31,7 +31,7 @@ contract OlympusAuthority is IOlympusAuthority, OlympusAccessControlled {
         address _guardian,
         address _policy,
         address _vault
-    ) OlympusAccessControlled(IOlympusAuthority(address(this))) {
+    ) FydeAccessControlled(IFydeAuthority(address(this))) {
         governor = _governor;
         emit GovernorPushed(address(0), governor, true);
         guardian = _guardian;

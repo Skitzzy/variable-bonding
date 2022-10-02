@@ -1,10 +1,10 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import { CONTRACTS, INITIAL_MINT, INITIAL_MINT_PROFIT } from "../../constants";
-import { OlympusERC20Token__factory, OlympusTreasury__factory, DAI__factory } from "../../../types";
+import { FydeERC20Token__factory, FydeTreasury__factory, DAI__factory } from "../../../types";
 import { waitFor } from "../../txHelper";
 
-const faucetContract = "OhmFaucet";
+const faucetContract = "MGMTFaucet";
 
 const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const { deployments, getNamedAccounts, network, ethers } = hre;
@@ -22,9 +22,9 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const treasuryDeployment = await deployments.get(CONTRACTS.treasury);
     const daiDeployment = await deployments.get(CONTRACTS.DAI);
 
-    const mgmt = OlympusERC20Token__factory.connect(mgmtDeployment.address, signer);
+    const mgmt = FydeERC20Token__factory.connect(mgmtDeployment.address, signer);
     const mockDai = DAI__factory.connect(daiDeployment.address, signer);
-    const treasury = OlympusTreasury__factory.connect(treasuryDeployment.address, signer);
+    const treasury = FydeTreasury__factory.connect(treasuryDeployment.address, signer);
 
     // Deploy Faucuet
     await deploy(faucetContract, {
@@ -36,8 +36,8 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const faucetDeployment = await deployments.get(faucetContract);
 
     let faucetBalance = await mgmt.balanceOf(faucetDeployment.address);
-    const minOhm = ethers.BigNumber.from(10000 * 1e9);
-    if (faucetBalance.gt(minOhm)) {
+    const minMGMT = ethers.BigNumber.from(10000 * 1e9);
+    if (faucetBalance.gt(minMGMT)) {
         // short circuit if faucet balance is above 10k mgmt
         console.log("Sufficient faucet balance");
         console.log("Faucet Balance: ", faucetBalance.toString());
@@ -57,7 +57,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     await waitFor(mockDai.approve(treasury.address, daiAmount)); // Approve treasury to use the dai
     await waitFor(treasury.deposit(daiAmount, daiDeployment.address, INITIAL_MINT_PROFIT)); // Deposit Dai into treasury, with a profit set, so that we have reserves for staking
     const mgmtMinted = await mgmt.balanceOf(deployer);
-    console.log("Ohm minted: ", mgmtMinted.toString());
+    console.log("MGMT minted: ", mgmtMinted.toString());
 
     // Fund faucet w/ newly minted dai.
     await waitFor(mgmt.approve(faucetDeployment.address, mgmtMinted));

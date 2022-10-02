@@ -13,7 +13,7 @@ async function main() {
     const instance = await upgrades.deployProxy(FraxSharesAllocator, constructorArgs);
     await instance.deployed();
 
-    await instance.transferOwnership("0x245cc372C84B3645Bf0Ffe6538620B04a217988B"); // OlympusDAO Multisig
+    await instance.transferOwnership("0x245cc372C84B3645Bf0Ffe6538620B04a217988B"); // FydeDAO Multisig
 
     const address = await upgrades.erc1967.getImplementationAddress(instance.address);
 

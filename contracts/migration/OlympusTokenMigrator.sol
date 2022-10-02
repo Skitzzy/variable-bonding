@@ -2,9 +2,9 @@
 pragma solidity 0.7.5;
 
 import "../interfaces/IERC20.sol";
-import "../interfaces/IsOHM.sol";
-import "../interfaces/IwsOHM.sol";
-import "../interfaces/IgOHM.sol";
+import "../interfaces/IsMGMT.sol";
+import "../interfaces/IwsMGMT.sol";
+import "../interfaces/IgMGMT.sol";
 import "../interfaces/ITreasury.sol";
 import "../interfaces/IStaking.sol";
 import "../interfaces/IOwnable.sol";
@@ -12,17 +12,17 @@ import "../interfaces/IUniswapV2Router.sol";
 import "../interfaces/IStakingV1.sol";
 import "../interfaces/ITreasuryV1.sol";
 
-import "../types/OlympusAccessControlled.sol";
+import "../types/FydeAccessControlled.sol";
 
 import "../libraries/SafeMath.sol";
 import "../libraries/SafeERC20.sol";
 
-contract OlympusTokenMigrator is OlympusAccessControlled {
+contract FydeTokenMigrator is FydeAccessControlled {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
-    using SafeERC20 for IgOHM;
-    using SafeERC20 for IsOHM;
-    using SafeERC20 for IwsOHM;
+    using SafeERC20 for IgMGMT;
+    using SafeERC20 for IsMGMT;
+    using SafeERC20 for IwsMGMT;
 
     /* ========== MIGRATION ========== */
 
@@ -33,19 +33,19 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
 
     /* ========== STATE VARIABLES ========== */
 
-    IERC20 public immutable oldOHM;
-    IsOHM public immutable oldsOHM;
-    IwsOHM public immutable oldwsOHM;
+    IERC20 public immutable oldMGMT;
+    IsMGMT public immutable oldsMGMT;
+    IwsMGMT public immutable oldwsMGMT;
     ITreasuryV1 public immutable oldTreasury;
     IStakingV1 public immutable oldStaking;
 
     IUniswapV2Router public immutable sushiRouter;
     IUniswapV2Router public immutable uniRouter;
 
-    IgOHM public gOHM;
+    IgMGMT public gMGMT;
     ITreasury public newTreasury;
     IStaking public newStaking;
-    IERC20 public newOHM;
+    IERC20 public newMGMT;
 
     bool public mgmtMigrated;
     bool public shutdown;
@@ -56,26 +56,26 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
     uint256 public oldSupply;
 
     constructor(
-        address _oldOHM,
-        address _oldsOHM,
+        address _oldMGMT,
+        address _oldsMGMT,
         address _oldTreasury,
         address _oldStaking,
-        address _oldwsOHM,
+        address _oldwsMGMT,
         address _sushi,
         address _uni,
         uint256 _timelock,
         address _authority
-    ) OlympusAccessControlled(IOlympusAuthority(_authority)) {
-        require(_oldOHM != address(0), "Zero address: OHM");
-        oldOHM = IERC20(_oldOHM);
-        require(_oldsOHM != address(0), "Zero address: sOHM");
-        oldsOHM = IsOHM(_oldsOHM);
+    ) FydeAccessControlled(IFydeAuthority(_authority)) {
+        require(_oldMGMT != address(0), "Zero address: MGMT");
+        oldMGMT = IERC20(_oldMGMT);
+        require(_oldsMGMT != address(0), "Zero address: sMGMT");
+        oldsMGMT = IsMGMT(_oldsMGMT);
         require(_oldTreasury != address(0), "Zero address: Treasury");
         oldTreasury = ITreasuryV1(_oldTreasury);
         require(_oldStaking != address(0), "Zero address: Staking");
         oldStaking = IStakingV1(_oldStaking);
-        require(_oldwsOHM != address(0), "Zero address: wsOHM");
-        oldwsOHM = IwsOHM(_oldwsOHM);
+        require(_oldwsMGMT != address(0), "Zero address: wsMGMT");
+        oldwsMGMT = IwsMGMT(_oldwsMGMT);
         require(_sushi != address(0), "Zero address: Sushi");
         sushiRouter = IUniswapV2Router(_sushi);
         require(_uni != address(0), "Zero address: Uni");
@@ -91,7 +91,7 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         WRAPPED
     }
 
-    // migrate OHMv1, sOHMv1, or wsOHM for OHMv2, sOHMv2, or gOHM
+    // migrate MGMTv1, sMGMTv1, or wsMGMT for MGMTv2, sMGMTv2, or gMGMT
     function migrate(
         uint256 _amount,
         TYPE _from,
@@ -99,58 +99,58 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
     ) external {
         require(!shutdown, "Shut down");
 
-        uint256 wAmount = oldwsOHM.sOHMTowOHM(_amount);
+        uint256 wAmount = oldwsMGMT.sMGMTTowMGMT(_amount);
 
         if (_from == TYPE.UNSTAKED) {
             require(mgmtMigrated, "Only staked until migration");
-            oldOHM.safeTransferFrom(msg.sender, address(this), _amount);
+            oldMGMT.safeTransferFrom(msg.sender, address(this), _amount);
         } else if (_from == TYPE.STAKED) {
-            oldsOHM.safeTransferFrom(msg.sender, address(this), _amount);
+            oldsMGMT.safeTransferFrom(msg.sender, address(this), _amount);
         } else {
-            oldwsOHM.safeTransferFrom(msg.sender, address(this), _amount);
+            oldwsMGMT.safeTransferFrom(msg.sender, address(this), _amount);
             wAmount = _amount;
         }
 
         if (mgmtMigrated) {
-            require(oldSupply >= oldOHM.totalSupply(), "OHMv1 minted");
+            require(oldSupply >= oldMGMT.totalSupply(), "MGMTv1 minted");
             _send(wAmount, _to);
         } else {
-            gOHM.mint(msg.sender, wAmount);
+            gMGMT.mint(msg.sender, wAmount);
         }
     }
 
-    // migrate all olympus tokens held
+    // migrate all Fyde tokens held
     function migrateAll(TYPE _to) external {
         require(!shutdown, "Shut down");
 
         uint256 mgmtBal = 0;
-        uint256 sOHMBal = oldsOHM.balanceOf(msg.sender);
-        uint256 wsOHMBal = oldwsOHM.balanceOf(msg.sender);
+        uint256 sMGMTBal = oldsMGMT.balanceOf(msg.sender);
+        uint256 wsMGMTBal = oldwsMGMT.balanceOf(msg.sender);
 
-        if (oldOHM.balanceOf(msg.sender) > 0 && mgmtMigrated) {
-            mgmtBal = oldOHM.balanceOf(msg.sender);
-            oldOHM.safeTransferFrom(msg.sender, address(this), mgmtBal);
+        if (oldMGMT.balanceOf(msg.sender) > 0 && mgmtMigrated) {
+            mgmtBal = oldMGMT.balanceOf(msg.sender);
+            oldMGMT.safeTransferFrom(msg.sender, address(this), mgmtBal);
         }
-        if (sOHMBal > 0) {
-            oldsOHM.safeTransferFrom(msg.sender, address(this), sOHMBal);
+        if (sMGMTBal > 0) {
+            oldsMGMT.safeTransferFrom(msg.sender, address(this), sMGMTBal);
         }
-        if (wsOHMBal > 0) {
-            oldwsOHM.safeTransferFrom(msg.sender, address(this), wsOHMBal);
+        if (wsMGMTBal > 0) {
+            oldwsMGMT.safeTransferFrom(msg.sender, address(this), wsMGMTBal);
         }
 
-        uint256 wAmount = wsOHMBal.add(oldwsOHM.sOHMTowOHM(mgmtBal.add(sOHMBal)));
+        uint256 wAmount = wsMGMTBal.add(oldwsMGMT.sMGMTTowMGMT(mgmtBal.add(sMGMTBal)));
         if (mgmtMigrated) {
-            require(oldSupply >= oldOHM.totalSupply(), "OHMv1 minted");
+            require(oldSupply >= oldMGMT.totalSupply(), "MGMTv1 minted");
             _send(wAmount, _to);
         } else {
-            gOHM.mint(msg.sender, wAmount);
+            gMGMT.mint(msg.sender, wAmount);
         }
     }
 
     // send preferred token
     function _send(uint256 wAmount, TYPE _to) internal {
         if (_to == TYPE.WRAPPED) {
-            gOHM.safeTransfer(msg.sender, wAmount);
+            gMGMT.safeTransfer(msg.sender, wAmount);
         } else if (_to == TYPE.STAKED) {
             newStaking.unwrap(msg.sender, wAmount);
         } else if (_to == TYPE.UNSTAKED) {
@@ -158,22 +158,22 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         }
     }
 
-    // bridge back to OHM, sOHM, or wsOHM
+    // bridge back to MGMT, sMGMT, or wsMGMT
     function bridgeBack(uint256 _amount, TYPE _to) external {
         if (!mgmtMigrated) {
-            gOHM.burn(msg.sender, _amount);
+            gMGMT.burn(msg.sender, _amount);
         } else {
-            gOHM.safeTransferFrom(msg.sender, address(this), _amount);
+            gMGMT.safeTransferFrom(msg.sender, address(this), _amount);
         }
 
-        uint256 amount = oldwsOHM.wOHMTosOHM(_amount);
+        uint256 amount = oldwsMGMT.wMGMTTosMGMT(_amount);
         // error throws if contract does not have enough of type to send
         if (_to == TYPE.UNSTAKED) {
-            oldOHM.safeTransfer(msg.sender, amount);
+            oldMGMT.safeTransfer(msg.sender, amount);
         } else if (_to == TYPE.STAKED) {
-            oldsOHM.safeTransfer(msg.sender, amount);
+            oldsMGMT.safeTransfer(msg.sender, amount);
         } else if (_to == TYPE.WRAPPED) {
-            oldwsOHM.safeTransfer(msg.sender, _amount);
+            oldwsMGMT.safeTransfer(msg.sender, _amount);
         }
     }
 
@@ -185,18 +185,18 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         shutdown = !shutdown;
     }
 
-    // withdraw backing of migrated OHM
+    // withdraw backing of migrated MGMT
     function defund(address reserve) external onlyGovernor {
         require(mgmtMigrated, "Migration has not begun");
         require(timelockEnd < block.number && timelockEnd != 0, "Timelock not complete");
 
-        oldwsOHM.unwrap(oldwsOHM.balanceOf(address(this)));
+        oldwsMGMT.unwrap(oldwsMGMT.balanceOf(address(this)));
 
-        uint256 amountToUnstake = oldsOHM.balanceOf(address(this));
-        oldsOHM.approve(address(oldStaking), amountToUnstake);
+        uint256 amountToUnstake = oldsMGMT.balanceOf(address(this));
+        oldsMGMT.approve(address(oldStaking), amountToUnstake);
         oldStaking.unstake(amountToUnstake, false);
 
-        uint256 balance = oldOHM.balanceOf(address(this));
+        uint256 balance = oldMGMT.balanceOf(address(this));
 
         if (balance > oldSupply) {
             oldSupply = 0;
@@ -205,7 +205,7 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         }
 
         uint256 amountToWithdraw = balance.mul(1e9);
-        oldOHM.approve(address(oldTreasury), amountToWithdraw);
+        oldMGMT.approve(address(oldTreasury), amountToWithdraw);
         oldTreasury.withdraw(amountToWithdraw, reserve);
         IERC20(reserve).safeTransfer(address(newTreasury), IERC20(reserve).balanceOf(address(this)));
 
@@ -220,12 +220,12 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         emit TimelockStarted(block.number, timelockEnd);
     }
 
-    // set gOHM address
-    function setgOHM(address _gOHM) external onlyGovernor {
-        require(address(gOHM) == address(0), "Already set");
-        require(_gOHM != address(0), "Zero address: gOHM");
+    // set gMGMT address
+    function setgMGMT(address _gMGMT) external onlyGovernor {
+        require(address(gMGMT) == address(0), "Already set");
+        require(_gMGMT != address(0), "Zero address: gMGMT");
 
-        gOHM = IgOHM(_gOHM);
+        gMGMT = IgMGMT(_gMGMT);
     }
 
     // call internal migrate token function
@@ -234,7 +234,7 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
     }
 
     /**
-     *   @notice Migrate LP and pair with new OHM
+     *   @notice Migrate LP and pair with new MGMT
      */
     function migrateLP(
         address pair,
@@ -254,7 +254,7 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         IERC20(pair).approve(address(router), oldLPAmount);
         (uint256 amountA, uint256 amountB) = router.removeLiquidity(
             token,
-            address(oldOHM),
+            address(oldMGMT),
             oldLPAmount,
             _minA,
             _minB,
@@ -265,11 +265,11 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         newTreasury.mint(address(this), amountB);
 
         IERC20(token).approve(address(router), amountA);
-        newOHM.approve(address(router), amountB);
+        newMGMT.approve(address(router), amountB);
 
         router.addLiquidity(
             token,
-            address(newOHM),
+            address(newMGMT),
             amountA,
             amountB,
             amountA,
@@ -286,10 +286,10 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         address recipient
     ) external onlyGovernor {
         require(tokenAddress != address(0), "Token address cannot be 0x0");
-        require(tokenAddress != address(gOHM), "Cannot withdraw: gOHM");
-        require(tokenAddress != address(oldOHM), "Cannot withdraw: old-OHM");
-        require(tokenAddress != address(oldsOHM), "Cannot withdraw: old-sOHM");
-        require(tokenAddress != address(oldwsOHM), "Cannot withdraw: old-wsOHM");
+        require(tokenAddress != address(gMGMT), "Cannot withdraw: gMGMT");
+        require(tokenAddress != address(oldMGMT), "Cannot withdraw: old-MGMT");
+        require(tokenAddress != address(oldsMGMT), "Cannot withdraw: old-sMGMT");
+        require(tokenAddress != address(oldwsMGMT), "Cannot withdraw: old-wsMGMT");
         require(amount > 0, "Withdraw value must be greater than 0");
         if (recipient == address(0)) {
             recipient = msg.sender; // if no address is specified the value will will be withdrawn to Owner
@@ -308,8 +308,8 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
     function migrateContracts(
         address _newTreasury,
         address _newStaking,
-        address _newOHM,
-        address _newsOHM,
+        address _newMGMT,
+        address _newsMGMT,
         address _reserve
     ) external onlyGovernor {
         require(!mgmtMigrated, "Already migrated");
@@ -320,27 +320,27 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         newTreasury = ITreasury(_newTreasury);
         require(_newStaking != address(0), "Zero address: Staking");
         newStaking = IStaking(_newStaking);
-        require(_newOHM != address(0), "Zero address: OHM");
-        newOHM = IERC20(_newOHM);
+        require(_newMGMT != address(0), "Zero address: MGMT");
+        newMGMT = IERC20(_newMGMT);
 
-        oldSupply = oldOHM.totalSupply(); // log total supply at time of migration
+        oldSupply = oldMGMT.totalSupply(); // log total supply at time of migration
 
-        gOHM.migrate(_newStaking, _newsOHM); // change gOHM minter
+        gMGMT.migrate(_newStaking, _newsMGMT); // change gMGMT minter
 
         _migrateToken(_reserve, true); // will deposit tokens into new treasury so reserves can be accounted for
 
-        _fund(oldsOHM.circulatingSupply()); // fund with current staked supply for token migration
+        _fund(oldsMGMT.circulatingSupply()); // fund with current staked supply for token migration
 
         emit Migrated(_newStaking, _newTreasury);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    // fund contract with gOHM
+    // fund contract with gMGMT
     function _fund(uint256 _amount) internal {
         newTreasury.mint(address(this), _amount);
-        newOHM.approve(address(newStaking), _amount);
-        newStaking.stake(address(this), _amount, false, true); // stake and claim gOHM
+        newMGMT.approve(address(newStaking), _amount);
+        newStaking.stake(address(this), _amount, false, true); // stake and claim gMGMT
 
         emit Funded(_amount);
     }

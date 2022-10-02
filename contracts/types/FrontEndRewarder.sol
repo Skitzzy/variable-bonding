@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.10;
 
-import "../types/OlympusAccessControlled.sol";
+import "../types/FydeAccessControlled.sol";
 import "../interfaces/IERC20.sol";
 
-abstract contract FrontEndRewarder is OlympusAccessControlled {
+abstract contract FrontEndRewarder is FydeAccessControlled {
     /* ========= STATE VARIABLES ========== */
 
     uint256 public daoReward; // % reward for dao (3 decimals: 100 = 1%)
@@ -14,7 +14,7 @@ abstract contract FrontEndRewarder is OlympusAccessControlled {
 
     IERC20 internal immutable mgmt; // reward token
 
-    constructor(IOlympusAuthority _authority, IERC20 _mgmt) OlympusAccessControlled(_authority) {
+    constructor(IFydeAuthority _authority, IERC20 _mgmt) FydeAccessControlled(_authority) {
         mgmt = _mgmt;
     }
 

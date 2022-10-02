@@ -6,23 +6,23 @@ async function main() {
 
     const firstEpochNumber = "";
     const firstBlockNumber = "";
-    const gOHM = "";
+    const gMGMT = "";
     const authority = "";
 
-    const OHM = await ethers.getContractFactory("OlympusERC20Token");
-    const mgmt = await OHM.deploy(authority);
+    const MGMT = await ethers.getContractFactory("FydeERC20Token");
+    const mgmt = await MGMT.deploy(authority);
 
-    const OlympusTreasury = await ethers.getContractFactory("OlympusTreasury");
-    const olympusTreasury = await OlympusTreasury.deploy(mgmt.address, "0", authority);
+    const FydeTreasury = await ethers.getContractFactory("FydeTreasury");
+    const FydeTreasury = await FydeTreasury.deploy(mgmt.address, "0", authority);
 
-    const SOHM = await ethers.getContractFactory("sOlympus");
-    const sOHM = await SOHM.deploy();
+    const SMGMT = await ethers.getContractFactory("sFyde");
+    const sMGMT = await SMGMT.deploy();
 
-    const OlympusStaking = await ethers.getContractFactory("OlympusStaking");
-    const staking = await OlympusStaking.deploy(
+    const FydeStaking = await ethers.getContractFactory("FydeStaking");
+    const staking = await FydeStaking.deploy(
         mgmt.address,
-        sOHM.address,
-        gOHM,
+        sMGMT.address,
+        gMGMT,
         "2200",
         firstEpochNumber,
         firstBlockNumber,
@@ -31,19 +31,19 @@ async function main() {
 
     const Distributor = await ethers.getContractFactory("Distributor");
     const distributor = await Distributor.deploy(
-        olympusTreasury.address,
+        FydeTreasury.address,
         mgmt.address,
         staking.address,
         authority
     );
 
-    await sOHM.setIndex("");
-    await sOHM.setgOHM(gOHM);
-    await sOHM.initialize(staking.address, olympusTreasury.address);
+    await sMGMT.setIndex("");
+    await sMGMT.setgMGMT(gMGMT);
+    await sMGMT.initialize(staking.address, FydeTreasury.address);
 
-    console.log("OHM: " + mgmt.address);
-    console.log("Olympus Treasury: " + olympusTreasury.address);
-    console.log("Staked Olympus: " + sOHM.address);
+    console.log("MGMT: " + mgmt.address);
+    console.log("Fyde Treasury: " + FydeTreasury.address);
+    console.log("Staked Fyde: " + sMGMT.address);
     console.log("Staking Contract: " + staking.address);
     console.log("Distributor: " + distributor.address);
 }

@@ -3,22 +3,22 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 import {
-    OlympusERC20Token,
-    OlympusERC20Token__factory,
-    OlympusAuthority__factory,
+    FydeERC20Token,
+    FydeERC20Token__factory,
+    FydeAuthority__factory,
 } from "../../types";
 
-describe("OlympusTest", () => {
+describe("FydeTest", () => {
     let deployer: SignerWithAddress;
     let vault: SignerWithAddress;
     let bob: SignerWithAddress;
     let alice: SignerWithAddress;
-    let mgmt: OlympusERC20Token;
+    let mgmt: FydeERC20Token;
 
     beforeEach(async () => {
         [deployer, vault, bob, alice] = await ethers.getSigners();
 
-        const authority = await new OlympusAuthority__factory(deployer).deploy(
+        const authority = await new FydeAuthority__factory(deployer).deploy(
             deployer.address,
             deployer.address,
             deployer.address,
@@ -26,12 +26,12 @@ describe("OlympusTest", () => {
         );
         await authority.deployed();
 
-        mgmt = await new OlympusERC20Token__factory(deployer).deploy(authority.address);
+        mgmt = await new FydeERC20Token__factory(deployer).deploy(authority.address);
     });
 
     it("correctly constructs an ERC20", async () => {
-        expect(await mgmt.name()).to.equal("Olympus");
-        expect(await mgmt.symbol()).to.equal("OHM");
+        expect(await mgmt.name()).to.equal("Fyde");
+        expect(await mgmt.symbol()).to.equal("MGMT");
         expect(await mgmt.decimals()).to.equal(9);
     });
 

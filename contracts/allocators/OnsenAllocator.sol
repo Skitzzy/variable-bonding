@@ -45,7 +45,7 @@ contract OnsenAllocator is Ownable {
 
     address immutable masterChef; // Onsen contract
 
-    address immutable treasury; // Olympus Treasury
+    address immutable treasury; // Fyde Treasury
 
     uint256 public totalValueDeployed; // Total RFV deployed
 
@@ -174,7 +174,7 @@ contract OnsenAllocator is Ownable {
 
         // approve and deposit LP into treasury
         IERC20(LP).approve(treasury, _amount);
-        // use value for profit so that no OHM is minted
+        // use value for profit so that no MGMT is minted
         ITreasury(treasury).deposit(_amount, LP, value);
 
         enterSushiBar(_stake); // manage rewards
@@ -248,7 +248,7 @@ contract OnsenAllocator is Ownable {
 
         // approve and deposit LP into treasury
         IERC20(LP).approve(treasury, balance);
-        // use value for profit so that no OHM is minted
+        // use value for profit so that no MGMT is minted
         ITreasury(treasury).deposit(balance, LP, value);
     }
 }

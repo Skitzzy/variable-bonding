@@ -14,15 +14,15 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
     const authorityDeployment = await deployments.get(CONTRACTS.authority);
     const mgmtDeployment = await deployments.get(CONTRACTS.mgmt);
-    const sOhmDeployment = await deployments.get(CONTRACTS.sOhm);
-    const gOhmDeployment = await deployments.get(CONTRACTS.gOhm);
+    const sMGMTDeployment = await deployments.get(CONTRACTS.sMGMT);
+    const gMGMTDeployment = await deployments.get(CONTRACTS.gMGMT);
 
     await deploy(CONTRACTS.staking, {
         from: deployer,
         args: [
             mgmtDeployment.address,
-            sOhmDeployment.address,
-            gOhmDeployment.address,
+            sMGMTDeployment.address,
+            gMGMTDeployment.address,
             EPOCH_LENGTH_IN_BLOCKS,
             FIRST_EPOCH_NUMBER,
             FIRST_EPOCH_TIME,
@@ -33,6 +33,6 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 };
 
 func.tags = [CONTRACTS.staking, "staking"];
-func.dependencies = [CONTRACTS.mgmt, CONTRACTS.sOhm, CONTRACTS.gOhm];
+func.dependencies = [CONTRACTS.mgmt, CONTRACTS.sMGMT, CONTRACTS.gMGMT];
 
 export default func;

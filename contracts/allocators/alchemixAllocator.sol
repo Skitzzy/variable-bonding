@@ -4,7 +4,7 @@ pragma solidity 0.8.10;
 import "../libraries/SafeERC20.sol";
 import "../interfaces/IERC20.sol";
 import "../interfaces/ITreasury.sol";
-import "../types/OlympusAccessControlled.sol";
+import "../types/FydeAccessControlled.sol";
 
 interface ITokemakManager {
     function currentCycleIndex() external view returns (uint256);
@@ -43,7 +43,7 @@ interface IStakingPools {
  *  Sends back Alchemix token with accured reward to treasury.
  */
 
-contract AlchemixAllocator is OlympusAccessControlled {
+contract AlchemixAllocator is FydeAccessControlled {
     /* ======== DEPENDENCIES ======== */
 
     using SafeERC20 for IERC20;
@@ -55,7 +55,7 @@ contract AlchemixAllocator is OlympusAccessControlled {
 
     ITokemaktALCX public immutable tALCX; // Tokemak tALCX deposit contract
     IStakingPools public immutable pool; // Alchemix staking contract
-    ITreasury public treasury; // Olympus Treasury
+    ITreasury public treasury; // Fyde Treasury
 
     uint256 public totalAlchemixDeposited;
 
@@ -66,8 +66,8 @@ contract AlchemixAllocator is OlympusAccessControlled {
         address _alchemix,
         address _tALCX,
         address _pool,
-        address _olympusAuthority
-    ) OlympusAccessControlled(IOlympusAuthority(_olympusAuthority)) {
+        address _FydeAuthority
+    ) FydeAccessControlled(IFydeAuthority(_FydeAuthority)) {
         require(_treasury != address(0));
         treasury = ITreasury(_treasury);
 

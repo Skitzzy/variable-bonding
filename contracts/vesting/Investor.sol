@@ -5,7 +5,7 @@ pragma abicoder v2;
 import "../libraries/SafeMath.sol";
 import "../libraries/SafeERC20.sol";
 import "../interfaces/ITreasury.sol";
-import "../interfaces/IgOHM.sol";
+import "../interfaces/IgMGMT.sol";
 import "../interfaces/IStaking.sol";
 import "../types/Ownable.sol";
 
@@ -13,14 +13,14 @@ interface IClaim {
     struct Term {
         uint256 percent; // 4 decimals ( 5000 = 0.5% )
         uint256 gClaimed; // static number
-        uint256 max; // maximum nominal OHM amount can claim
+        uint256 max; // maximum nominal MGMT amount can claim
     }
 
     function terms(address _address) external view returns (Term memory);
 }
 
 /**
- *  This contract allows Olympus seed investors and advisors to claim tokens.
+ *  This contract allows Fyde seed investors and advisors to claim tokens.
  *  It has been revised to consider claims as staked immediately for accounting purposes.
  *  This ensures that network ownership does not exceed disclosed levels.
  *  Claimants remain protected from network dilution that may arise, but claim and stake
@@ -39,7 +39,7 @@ contract InvestorClaimV2 is Ownable {
     struct Term {
         uint256 percent; // 4 decimals ( 5000 = 0.5% )
         uint256 gClaimed; // rebase-agnostic number
-        uint256 max; // maximum nominal OHM amount can claim
+        uint256 max; // maximum nominal MGMT amount can claim
     }
 
     /* ========== STATE VARIABLES ========== */
@@ -50,12 +50,12 @@ contract InvestorClaimV2 is Ownable {
     IERC20 internal immutable dai = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
     // mints claim token
     ITreasury internal immutable treasury = ITreasury(0x9A315BdF513367C0377FB36545857d12e85813Ef);
-    // stake OHM for sOHM
+    // stake MGMT for sMGMT
     IStaking internal immutable staking = IStaking(0xB63cac384247597756545b500253ff8E607a8020);
     // holds non-circulating supply
     address internal immutable dao = 0x245cc372C84B3645Bf0Ffe6538620B04a217988B;
     // tracks rebase-agnostic balance
-    IgOHM internal immutable gOHM = IgOHM(0x0ab87046fBb341D058F17CBC4c1133F25a20a52f);
+    IgMGMT internal immutable gMGMT = IgMGMT(0x0ab87046fBb341D058F17CBC4c1133F25a20a52f);
     // previous deployment of contract (to migrate terms)
     IClaim internal immutable previous = IClaim(0xcD4B3c7B746161f0E54bc9a23307CE222a2bF081);
 
@@ -73,7 +73,7 @@ contract InvestorClaimV2 is Ownable {
     /* ========== MUTABLE FUNCTIONS ========== */
 
     /**
-     * @notice allows wallet to claim OHM
+     * @notice allows wallet to claim MGMT
      * @param _to address
      * @param _amount uint256
      */
@@ -82,7 +82,7 @@ contract InvestorClaimV2 is Ownable {
     }
 
     /**
-     * @notice allows wallet to claim OHM and stake. set _claim = true if warmup is 0.
+     * @notice allows wallet to claim MGMT and stake. set _claim = true if warmup is 0.
      * @param _to address
      * @param _amount uint256
      * @param _rebasing bool
@@ -98,7 +98,7 @@ contract InvestorClaimV2 is Ownable {
     }
 
     /**
-     * @notice logic for claiming OHM
+     * @notice logic for claiming MGMT
      * @param _amount uint256
      * @return toSend_ uint256
      */
@@ -111,7 +111,7 @@ contract InvestorClaimV2 is Ownable {
         require(redeemableFor(msg.sender).div(1e9) >= toSend_, "Claim more than vested");
         require(info.max.sub(claimed(msg.sender)) >= toSend_, "Claim more than max");
 
-        terms[msg.sender].gClaimed = info.gClaimed.add(gOHM.balanceTo(toSend_));
+        terms[msg.sender].gClaimed = info.gClaimed.add(gMGMT.balanceTo(toSend_));
     }
 
     /**
@@ -147,7 +147,7 @@ contract InvestorClaimV2 is Ownable {
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
-     * @notice view OHM claimable for address. DAI decimals (18).
+     * @notice view MGMT claimable for address. DAI decimals (18).
      * @param _address address
      * @return uint256
      */
@@ -159,16 +159,16 @@ contract InvestorClaimV2 is Ownable {
     }
 
     /**
-     * @notice view OHM claimed by address. OHM decimals (9).
+     * @notice view MGMT claimed by address. MGMT decimals (9).
      * @param _address address
      * @return uint256
      */
     function claimed(address _address) public view returns (uint256) {
-        return gOHM.balanceFrom(terms[_address].gClaimed);
+        return gMGMT.balanceFrom(terms[_address].gClaimed);
     }
 
     /**
-     * @notice view circulating supply of OHM
+     * @notice view circulating supply of MGMT
      * @notice calculated as total supply minus DAO holdings
      * @return uint256
      */

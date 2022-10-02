@@ -8,7 +8,7 @@ import {
     IveFXSYieldDistributorV4,
     IveFXS,
     FraxSharesAllocator,
-    OlympusTreasury,
+    FydeTreasury,
     ERC20,
 } from "../../types";
 const { fork_network, fork_reset } = require("../utils/network_fork");
@@ -277,7 +277,7 @@ describe("FraxSharesAllocator", () => {
             ])) as FraxSharesAllocator;
 
             // new treasury
-            // const TreasuryContract = await ethers.getContractFactory("OlympusTreasury");
+            // const TreasuryContract = await ethers.getContractFactory("FydeTreasury");
             // treasury = await TreasuryContract.attach(TREASURY_ADDRESS) as ITreasuryAdmin;
 
             oldTreasury = new ethers.Contract(

@@ -10,7 +10,7 @@
         },
         {
           "internalType": "address",
-          "name": "_sOHM",
+          "name": "_sMGMT",
           "type": "address"
         }
       ],
@@ -440,7 +440,7 @@
         },
         {
           "internalType": "address",
-          "name": "_sOHM",
+          "name": "_sMGMT",
           "type": "address"
         }
       ],
@@ -514,10 +514,10 @@
     },
     {
       "inputs": [],
-      "name": "sOHM",
+      "name": "sMGMT",
       "outputs": [
         {
-          "internalType": "contract IsOHM",
+          "internalType": "contract IsMGMT",
           "name": "",
           "type": "address"
         }

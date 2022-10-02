@@ -29,7 +29,7 @@ interface IYieldStreamer {
     // View Functions
     function upkeepEligibility() external view returns (uint256 numberOfDepositsEligible, uint256 amountOfYieldToSwap);
 
-    function getPrincipalInGOHM(uint256 id_) external view returns (uint256);
+    function getPrincipalInGMGMT(uint256 id_) external view returns (uint256);
 
     function getRecipientIds(address recipient_) external view returns (uint256[] memory);
 }

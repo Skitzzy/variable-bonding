@@ -4,19 +4,19 @@ import { config, ethers } from "hardhat";
 import { FakeContract, smock } from "@defi-wonderland/smock";
 import {
     ITreasury,
-    IOHM,
+    IMGMT,
     Distributor__factory,
     Distributor,
-    OlympusAuthority,
-    OlympusAuthority__factory,
+    FydeAuthority,
+    FydeAuthority__factory,
     IStaking,
-    OlympusTreasury,
-    OlympusStaking,
+    FydeTreasury,
+    FydeStaking,
     MockERC20,
 } from "../../types";
 import { uniPairAbi } from "../utils/abi";
 import { addressZero, getCoin, impersonate, pinBlock } from "../utils/scripts";
-import { olympus } from "../utils/olympus";
+import { Fyde } from "../utils/Fyde";
 import { coins } from "../utils/coins";
 
 chai.use(smock.matchers);
@@ -44,10 +44,10 @@ describe.only("Distributor", () => {
     let other: SignerWithAddress;
 
     // contracts
-    let treasury: OlympusTreasury;
-    let staking: OlympusStaking;
+    let treasury: FydeTreasury;
+    let staking: FydeStaking;
     let distributor: Distributor;
-    let authority: OlympusAuthority;
+    let authority: FydeAuthority;
 
     // uniswap
     let mgmtDai: any;
@@ -65,16 +65,16 @@ describe.only("Distributor", () => {
         [owner, other] = await ethers.getSigners();
 
         treasury = (await ethers.getContractAt(
-            "OlympusTreasury",
-            olympus.treasury
-        )) as OlympusTreasury;
+            "FydeTreasury",
+            Fyde.treasury
+        )) as FydeTreasury;
 
         authority = (await ethers.getContractAt(
-            "OlympusAuthority",
-            olympus.authority
-        )) as OlympusAuthority;
+            "FydeAuthority",
+            Fyde.authority
+        )) as FydeAuthority;
 
-        staking = (await ethers.getContractAt("OlympusStaking", olympus.staking)) as OlympusStaking;
+        staking = (await ethers.getContractAt("FydeStaking", Fyde.staking)) as FydeStaking;
 
         governor = await impersonate(await authority.governor());
         guardian = await impersonate(await authority.guardian());

@@ -1,7 +1,7 @@
-# Ω Olympus Smart Contracts 
-![image](https://img.shields.io/github/forks/OlympusDAO/olympus-contracts?style=social)
+# Ω Fyde Smart Contracts 
+![image](https://img.shields.io/github/forks/FydeDAO/Fyde-contracts?style=social)
 
-This is the main Olympus smart contract development repository.
+This is the main Fyde smart contract development repository.
 
 ## 🔧 Setting up local development
 
@@ -14,7 +14,7 @@ This is the main Olympus smart contract development repository.
 
 ```sh
 # Clone the repository
-git clone https://github.com/OlympusDAO/olympus-contracts.git
+git clone https://github.com/FydeDAO/Fyde-contracts.git
 
 # Install dependencies
 yarn install

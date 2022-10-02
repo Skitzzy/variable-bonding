@@ -750,63 +750,63 @@ library SafeERC20 {
     }
 }
 
-interface IsOHMOLD {
+interface IsMGMTOLD {
     function INDEX() external view returns (uint256);
 }
 
-contract wOHM is ERC20 {
+contract wMGMT is ERC20 {
     using SafeERC20 for ERC20;
     using Address for address;
     using SafeMath for uint256;
 
-    address public immutable sOHM;
+    address public immutable sMGMT;
 
-    constructor(address _sOHM) ERC20("Wrapped sOHM", "wsOHM") {
-        require(_sOHM != address(0));
-        sOHM = _sOHM;
+    constructor(address _sMGMT) ERC20("Wrapped sMGMT", "wsMGMT") {
+        require(_sMGMT != address(0));
+        sMGMT = _sMGMT;
     }
 
     /**
-        @notice wrap sOHM
+        @notice wrap sMGMT
         @param _amount uint
         @return uint
      */
     function wrap(uint256 _amount) external returns (uint256) {
-        IERC20(sOHM).transferFrom(msg.sender, address(this), _amount);
+        IERC20(sMGMT).transferFrom(msg.sender, address(this), _amount);
 
-        uint256 value = sOHMTowOHM(_amount);
+        uint256 value = sMGMTTowMGMT(_amount);
         _mint(msg.sender, value);
         return value;
     }
 
     /**
-        @notice unwrap sOHM
+        @notice unwrap sMGMT
         @param _amount uint
         @return uint
      */
     function unwrap(uint256 _amount) external returns (uint256) {
         _burn(msg.sender, _amount);
 
-        uint256 value = wOHMTosOHM(_amount);
-        IERC20(sOHM).transfer(msg.sender, value);
+        uint256 value = wMGMTTosMGMT(_amount);
+        IERC20(sMGMT).transfer(msg.sender, value);
         return value;
     }
 
     /**
-        @notice converts wOHM amount to sOHM
+        @notice converts wMGMT amount to sMGMT
         @param _amount uint
         @return uint
      */
-    function wOHMTosOHM(uint256 _amount) public view returns (uint256) {
-        return _amount.mul(IsOHMOLD(sOHM).INDEX()).div(10**decimals());
+    function wMGMTTosMGMT(uint256 _amount) public view returns (uint256) {
+        return _amount.mul(IsMGMTOLD(sMGMT).INDEX()).div(10**decimals());
     }
 
     /**
-        @notice converts sOHM amount to wOHM
+        @notice converts sMGMT amount to wMGMT
         @param _amount uint
         @return uint
      */
-    function sOHMTowOHM(uint256 _amount) public view returns (uint256) {
-        return _amount.mul(10**decimals()).div(IsOHMOLD(sOHM).INDEX());
+    function sMGMTTowMGMT(uint256 _amount) public view returns (uint256) {
+        return _amount.mul(10**decimals()).div(IsMGMTOLD(sMGMT).INDEX());
     }
 }

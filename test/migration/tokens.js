@@ -2,19 +2,19 @@ const DAI_ADDRESS = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
 const FRAX_ADDRESS = "0x853d955aCEf822Db058eb8505911ED77F175b99e";
 const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 const LUSD_ADDRESS = "0x5f98805A4E8be255a32880FDeC7F6728C6568bA0";
-const OLD_WSOHM_ADDRESS = "0xCa76543Cf381ebBB277bE79574059e32108e3E65";
-const OLD_SOHM_ADDRESS = "0x04F2694C8fcee23e8Fd0dfEA1d4f5Bb8c352111F";
-const OLD_OHM_ADDRESS = "0x383518188c0c6d7730d91b2c03a03c837814a899";
-const OHM_DAI_LP = "0x34d7d7Aaf50AD4944B70B320aCB24C95fa2def7c";
-const OHM_FRAX_LP = "0x2dcE0dDa1C2f98e0F171DE8333c3c6Fe1BbF4877";
-const OHM_LUSD_LP = "0xfDf12D1F85b5082877A6E070524f50F6c84FAa6b";
+const OLD_WSMGMT_ADDRESS = "0xCa76543Cf381ebBB277bE79574059e32108e3E65";
+const OLD_SMGMT_ADDRESS = "0x04F2694C8fcee23e8Fd0dfEA1d4f5Bb8c352111F";
+const OLD_MGMT_ADDRESS = "0x383518188c0c6d7730d91b2c03a03c837814a899";
+const MGMT_DAI_LP = "0x34d7d7Aaf50AD4944B70B320aCB24C95fa2def7c";
+const MGMT_FRAX_LP = "0x2dcE0dDa1C2f98e0F171DE8333c3c6Fe1BbF4877";
+const MGMT_LUSD_LP = "0xfDf12D1F85b5082877A6E070524f50F6c84FAa6b";
 const SUSHI_FACTORY = "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac";
 const UNI_FACTORY = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f";
 
 // TODO(zx): Simulate wallets with assets
-const OHM_USER = "0xd1E4b670Ef483a8310b4209a1C7E5c2881006676";
-const SOHM_USER = "0xeBAD6df8ffa40c0D764f3Fc217B4028603bC2A26";
-const WSOHM_USER = "0x8567d7AaEaDEBd9c3a7583351CC69d35E89Bd6f1";
+const MGMT_USER = "0xd1E4b670Ef483a8310b4209a1C7E5c2881006676";
+const SMGMT_USER = "0xeBAD6df8ffa40c0D764f3Fc217B4028603bC2A26";
+const WSMGMT_USER = "0x8567d7AaEaDEBd9c3a7583351CC69d35E89Bd6f1";
 // TODO(zx): Simulate wallets with assets
 
 const dai_abi = require("../../abis/dai");
@@ -141,54 +141,54 @@ const treasury_tokens = [
     // }
 ];
 
-const olympus_tokens = [
+const Fyde_tokens = [
     {
         name: "wsmgmt",
-        address: OLD_WSOHM_ADDRESS,
+        address: OLD_WSMGMT_ADDRESS,
         abi: wsmgmt_abi,
         migrationType: 2, // WRAPPED
-        wallet: WSOHM_USER,
+        wallet: WSMGMT_USER,
     },
     {
         name: "smgmt",
-        address: OLD_SOHM_ADDRESS,
+        address: OLD_SMGMT_ADDRESS,
         abi: smgmt_abi,
         migrationType: 1, // STAKED
-        wallet: SOHM_USER,
+        wallet: SMGMT_USER,
     },
     {
         name: "mgmt",
-        address: OLD_OHM_ADDRESS,
+        address: OLD_MGMT_ADDRESS,
         abi: mgmt_abi,
         migrationType: 0, // UNSTAKED
-        wallet: OHM_USER,
+        wallet: MGMT_USER,
     },
 ];
 
-const olympus_lp_tokens = [
+const Fyde_lp_tokens = [
     {
         name: "mgmt_frax",
-        address: OHM_FRAX_LP,
+        address: MGMT_FRAX_LP,
         token0: FRAX_ADDRESS,
-        token1: OLD_OHM_ADDRESS,
+        token1: OLD_MGMT_ADDRESS,
         is_sushi: false,
         abi: mgmt_frax_lp_abi,
         isLP: true,
     },
     {
         name: "mgmt_lusd",
-        address: OHM_LUSD_LP,
+        address: MGMT_LUSD_LP,
         token0: LUSD_ADDRESS,
-        token1: OLD_OHM_ADDRESS,
+        token1: OLD_MGMT_ADDRESS,
         is_sushi: true,
         abi: mgmt_lusd_lp_abi,
         isLP: true,
     },
     {
         name: "mgmt_dai",
-        address: OHM_DAI_LP,
+        address: MGMT_DAI_LP,
         token0: DAI_ADDRESS,
-        token1: OLD_OHM_ADDRESS,
+        token1: OLD_MGMT_ADDRESS,
         is_sushi: true,
         abi: mgmt_dai_lp_abi,
         isLP: true,
@@ -208,4 +208,4 @@ const swaps = [
     },
 ];
 
-module.exports = { treasury_tokens, olympus_tokens, olympus_lp_tokens, swaps };
+module.exports = { treasury_tokens, Fyde_tokens, Fyde_lp_tokens, swaps };

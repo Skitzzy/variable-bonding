@@ -8,5 +8,5 @@ package.json
 typechain/
 dapp_test/test.sol
 contracts/governance/GovernorAlpha.sol
-contracts/governance/GovernorOHMegaDelegate.sol
+contracts/governance/GovernorMGMTegaDelegate.sol
 types/

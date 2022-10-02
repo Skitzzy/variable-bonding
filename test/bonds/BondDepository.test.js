@@ -4,7 +4,7 @@ const { smock } = require("@defi-wonderland/smock");
 
 describe("Bond Depository", async () => {
     const LARGE_APPROVAL = "100000000000000000000000000000000";
-    // Initial mint for Frax, OHM and DAI (10,000,000)
+    // Initial mint for Frax, MGMT and DAI (10,000,000)
     const initialMint = "10000000000000000000000000";
     const initialDeposit = "1000000000000000000000000";
 
@@ -13,7 +13,7 @@ describe("Bond Depository", async () => {
     let deployer, alice, bob, carol;
     let erc20Factory;
     let authFactory;
-    let gOhmFactory;
+    let gMGMTFactory;
     let depositoryFactory;
 
     let auth;
@@ -21,7 +21,7 @@ describe("Bond Depository", async () => {
     let mgmt;
     let depository;
     let treasury;
-    let gOHM;
+    let gMGMT;
     let staking;
 
     let capacity = 10000e9;
@@ -47,11 +47,11 @@ describe("Bond Depository", async () => {
     before(async () => {
         [deployer, alice, bob, carol] = await ethers.getSigners();
 
-        authFactory = await ethers.getContractFactory("OlympusAuthority");
+        authFactory = await ethers.getContractFactory("FydeAuthority");
         erc20Factory = await smock.mock("MockERC20");
-        gOhmFactory = await smock.mock("MockGOhm");
+        gMGMTFactory = await smock.mock("MockGMGMT");
 
-        depositoryFactory = await ethers.getContractFactory("OlympusBondDepositoryV2");
+        depositoryFactory = await ethers.getContractFactory("BondingContract");
 
         const block = await ethers.provider.getBlock("latest");
         conclusion = block.timestamp + timeToConclusion;
@@ -66,14 +66,14 @@ describe("Bond Depository", async () => {
             deployer.address,
             deployer.address
         );
-        mgmt = await erc20Factory.deploy("Olympus", "OHM", 9);
+        mgmt = await erc20Factory.deploy("Fyde", "MGMT", 9);
         treasury = await smock.fake("ITreasury");
-        gOHM = await gOhmFactory.deploy("50000000000"); // Set index as 50
-        staking = await smock.fake("OlympusStaking");
+        gMGMT = await gMGMTFactory.deploy("50000000000"); // Set index as 50
+        staking = await smock.fake("FydeStaking");
         depository = await depositoryFactory.deploy(
             auth.address,
             mgmt.address,
-            gOHM.address,
+            gMGMT.address,
             staking.address,
             treasury.address
         );
@@ -81,7 +81,7 @@ describe("Bond Depository", async () => {
         // Setup for each component
         await dai.mint(bob.address, initialMint);
 
-        // To get past OHM contract guards
+        // To get past MGMT contract guards
         await auth.pushVault(treasury.address, true);
 
         await dai.mint(deployer.address, initialDeposit);
@@ -90,8 +90,8 @@ describe("Bond Depository", async () => {
         await mgmt.mint(deployer.address, "10000000000000");
         await treasury.baseSupply.returns(await mgmt.totalSupply());
 
-        // Mint enough gOHM to payout rewards
-        await gOHM.mint(depository.address, "1000000000000000000000");
+        // Mint enough gMGMT to payout rewards
+        await gMGMT.mint(depository.address, "1000000000000000000000");
 
         await mgmt.connect(alice).approve(depository.address, LARGE_APPROVAL);
         await dai.connect(bob).approve(depository.address, LARGE_APPROVAL);
@@ -315,9 +315,9 @@ describe("Bond Depository", async () => {
         await network.provider.send("evm_increaseTime", [1000]);
         await depository.redeemAll(bob.address, true);
 
-        const bobBalance = Number(await gOHM.balanceOf(bob.address));
-        expect(bobBalance).to.greaterThanOrEqual(Number(await gOHM.balanceTo(expectedPayout)));
-        expect(bobBalance).to.lessThan(Number(await gOHM.balanceTo(expectedPayout * 1.0001)));
+        const bobBalance = Number(await gMGMT.balanceOf(bob.address));
+        expect(bobBalance).to.greaterThanOrEqual(Number(await gMGMT.balanceTo(expectedPayout)));
+        expect(bobBalance).to.lessThan(Number(await gMGMT.balanceTo(expectedPayout * 1.0001)));
     });
 
     it("should give correct rewards to referrer and dao", async () => {
