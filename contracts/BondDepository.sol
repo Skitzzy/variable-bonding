@@ -39,13 +39,13 @@ contract OlympusBondDepositoryV2 is IBondDepository, NoteKeeper {
 
     constructor(
         IOlympusAuthority _authority,
-        IERC20 _ohm,
-        IgOHM _gohm,
+        IERC20 _mgmt,
+        IgOHM _gmgmt,
         IStaking _staking,
         ITreasury _treasury
-    ) NoteKeeper(_authority, _ohm, _gohm, _staking, _treasury) {
+    ) NoteKeeper(_authority, _mgmt, _gmgmt, _staking, _treasury) {
         // save gas for users by bulk approving stake() transactions
-        _ohm.approve(address(_staking), 1e45);
+        _mgmt.approve(address(_staking), 1e45);
     }
 
     /* ======== DEPOSIT ======== */
@@ -98,7 +98,7 @@ contract OlympusBondDepositoryV2 is IBondDepository, NoteKeeper {
          * where
          * payout = OHM out
          * amount = quote tokens in
-         * price = quote tokens : ohm (i.e. 42069 DAI : OHM)
+         * price = quote tokens : mgmt (i.e. 42069 DAI : OHM)
          *
          * 1e18 = OHM decimals (9) + price decimals (9)
          */
@@ -229,7 +229,7 @@ contract OlympusBondDepositoryV2 is IBondDepository, NoteKeeper {
             uint256 price = _marketPrice(_id);
 
             // standardize capacity into an base token amount
-            // ohm decimals (9) + price decimals (9)
+            // mgmt decimals (9) + price decimals (9)
             uint256 capacity = market.capacityInQuote
                 ? ((market.capacity * 1e18) / price) / (10**meta.quoteDecimals)
                 : market.capacity;
@@ -293,7 +293,7 @@ contract OlympusBondDepositoryV2 is IBondDepository, NoteKeeper {
          * that will decay over in the length of the program if price remains the same).
          * it is converted into base token terms if passed in in quote token terms.
          *
-         * 1e18 = ohm decimals (9) + initial price decimals (9)
+         * 1e18 = mgmt decimals (9) + initial price decimals (9)
          */
         uint64 targetDebt = uint64(_booleans[0] ? ((_market[0] * 1e18) / _market[1]) / 10**decimals : _market[0]);
 
@@ -363,7 +363,7 @@ contract OlympusBondDepositoryV2 is IBondDepository, NoteKeeper {
 
         marketsForQuote[address(_quoteToken)].push(id_);
 
-        emit CreateMarket(id_, address(ohm), address(_quoteToken), _market[1]);
+        emit CreateMarket(id_, address(mgmt), address(_quoteToken), _market[1]);
     }
 
     /**
@@ -416,7 +416,7 @@ contract OlympusBondDepositoryV2 is IBondDepository, NoteKeeper {
      * @param _id          ID of market
      * @return             amount of OHM to be paid in OHM decimals
      *
-     * @dev 1e18 = ohm decimals (9) + market price decimals (9)
+     * @dev 1e18 = mgmt decimals (9) + market price decimals (9)
      */
     function payoutFor(uint256 _amount, uint256 _id) external view override returns (uint256) {
         Metadata memory meta = metadata[_id];

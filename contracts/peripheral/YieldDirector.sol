@@ -99,9 +99,9 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
         @param amount_ Amount of sOHM debt issued from donor to recipient
         @param recipient_ Address to direct staking yield and vault shares to
     */
-    function depositSohm(uint256 amount_, address recipient_) external override returns (uint256 depositId) {
-        uint256 gohmAmount = _toAgnostic(amount_);
-        depositId = _createDeposit(gohmAmount, recipient_);
+    function depositSmgmt(uint256 amount_, address recipient_) external override returns (uint256 depositId) {
+        uint256 gmgmtAmount = _toAgnostic(amount_);
+        depositId = _createDeposit(gmgmtAmount, recipient_);
 
         IERC20(sOHM).safeTransferFrom(msg.sender, address(this), amount_);
         staking.wrap(address(this), amount_);
@@ -123,9 +123,9 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
         @param depositId_ Deposit ID to direct additional gOHM to
         @param amount_ Amount of new sOHM debt issued from donor to recipient
     */
-    function addToSohmDeposit(uint256 depositId_, uint256 amount_) external override {
-        uint256 gohmAmount = _toAgnostic(amount_);
-        _increaseDeposit(depositId_, gohmAmount);
+    function addToSmgmtDeposit(uint256 depositId_, uint256 amount_) external override {
+        uint256 gmgmtAmount = _toAgnostic(amount_);
+        _increaseDeposit(depositId_, gmgmtAmount);
 
         IERC20(sOHM).safeTransferFrom(msg.sender, address(this), amount_);
         staking.wrap(address(this), amount_);
@@ -147,7 +147,7 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
         @param depositId_ Deposit ID to remove gOHM debt from
         @param amount_ Amount of gOHM debt to remove and return to donor as sOHM
     */
-    function withdrawPrincipalAsSohm(uint256 depositId_, uint256 amount_) external override {
+    function withdrawPrincipalAsSmgmt(uint256 depositId_, uint256 amount_) external override {
         uint256 amountWithdrawn = _withdraw(depositId_, amount_);
 
         staking.unwrap(msg.sender, amountWithdrawn);
@@ -339,7 +339,7 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
         @notice Redeem recipient's donated amount of sOHM at current index
         @param depositId_ Deposit id for this donation
     */
-    function redeemYieldAsSohm(uint256 depositId_) external override {
+    function redeemYieldAsSmgmt(uint256 depositId_) external override {
         uint256 amountRedeemed = _redeem(depositId_, msg.sender);
 
         staking.unwrap(msg.sender, amountRedeemed);
@@ -357,7 +357,7 @@ contract YieldDirector is IYieldDirector, YieldSplitter {
     /**
         @notice Redeem recipient's full donated amount of sOHM at current index as gOHM
     */
-    function redeemAllYieldAsSohm() external override {
+    function redeemAllYieldAsSmgmt() external override {
         uint256 amountRedeemed = _redeemAll(msg.sender);
 
         staking.unwrap(msg.sender, amountRedeemed);

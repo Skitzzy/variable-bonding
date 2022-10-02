@@ -12,7 +12,7 @@ const uniRouter = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
 const olympusGovernor = "0x245cc372C84B3645Bf0Ffe6538620B04a217988B";
 
 describe("SushiMigrator", async () => {
-    let governor, treasury, ohmContract, SushiMigrator, sushiMigrator;
+    let governor, treasury, mgmtContract, SushiMigrator, sushiMigrator;
 
     beforeEach(async () => {
         await fork_network(14486473);
@@ -20,7 +20,7 @@ describe("SushiMigrator", async () => {
             "OlympusTreasury",
             "0x9A315BdF513367C0377FB36545857d12e85813Ef"
         );
-        ohmContract = await ethers.getContractAt(
+        mgmtContract = await ethers.getContractAt(
             "contracts/interfaces/IERC20.sol:IERC20",
             "0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5"
         );
@@ -48,7 +48,7 @@ describe("SushiMigrator", async () => {
 
         await treasury.connect(governor).enable(3, sushiMigrator.address, sushiMigrator.address);
 
-        const ohmBalBeforeTx = await ohmContract.balanceOf(treasury.address);
+        const mgmtBalBeforeTx = await mgmtContract.balanceOf(treasury.address);
         const daiBalBeforeTx = await daiContract.balanceOf(treasury.address);
         const lpBalBeforeTx = await uniswapLpContract.balanceOf(treasury.address);
 
@@ -65,15 +65,15 @@ describe("SushiMigrator", async () => {
             );
 
         const tx = await sushiMigrator.amountsByMigrationId(0);
-        const ohmBalAfterTx = await ohmContract.balanceOf(treasury.address);
+        const mgmtBalAfterTx = await mgmtContract.balanceOf(treasury.address);
 
         const daiBalAfterTx = await daiContract.balanceOf(treasury.address);
         const lpBalAfterTx = await uniswapLpContract.balanceOf(treasury.address);
 
         if (tx.uniPoolToken0ReturnedToTreasury > 0) {
             assert.equal(
-                Number(ohmBalAfterTx),
-                Number(ohmBalBeforeTx) + Number(tx.uniPoolToken0ReturnedToTreasury)
+                Number(mgmtBalAfterTx),
+                Number(mgmtBalBeforeTx) + Number(tx.uniPoolToken0ReturnedToTreasury)
             );
         }
 
@@ -121,7 +121,7 @@ describe("SushiMigrator", async () => {
             to: user.address,
             value: ethers.utils.parseEther("2.0"), // Sends exactly 1.0 ether
         });
-        await ohmContract.connect(user).approve(uniRouter, "1247350");
+        await mgmtContract.connect(user).approve(uniRouter, "1247350");
 
         // The current price in the OHM/ETH uniswap pool isn't correct, using swapExactTokensForTokens to set the right price before proceeding.
         await router
@@ -137,7 +137,7 @@ describe("SushiMigrator", async () => {
                 "1000000000000000000"
             );
 
-        const ohmBalBeforeTx = await ohmContract.balanceOf(treasury.address);
+        const mgmtBalBeforeTx = await mgmtContract.balanceOf(treasury.address);
         const wethBalBeforeTx = await wethContract.balanceOf(treasury.address);
         const lpBalBeforeTx = await uniswapLpContract.balanceOf(treasury.address);
 
@@ -153,7 +153,7 @@ describe("SushiMigrator", async () => {
                 970
             );
 
-        const ohmBalAfterTx = await ohmContract.balanceOf(treasury.address);
+        const mgmtBalAfterTx = await mgmtContract.balanceOf(treasury.address);
         const wethBalAfterTx = await wethContract.balanceOf(treasury.address);
 
         const lpBalAfterTx = await uniswapLpContract.balanceOf(treasury.address);
@@ -161,8 +161,8 @@ describe("SushiMigrator", async () => {
 
         if (tx.uniPoolToken0ReturnedToTreasury > 0) {
             assert.equal(
-                Number(ohmBalAfterTx),
-                Number(ohmBalBeforeTx) + Number(tx.uniPoolToken0ReturnedToTreasury)
+                Number(mgmtBalAfterTx),
+                Number(mgmtBalBeforeTx) + Number(tx.uniPoolToken0ReturnedToTreasury)
             );
         }
 

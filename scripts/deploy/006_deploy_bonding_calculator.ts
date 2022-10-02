@@ -9,18 +9,18 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const { deployer } = await getNamedAccounts();
     const signer = await ethers.provider.getSigner(deployer);
 
-    const ohmDeployment = await deployments.get(CONTRACTS.ohm);
-    const ohm = await OlympusERC20Token__factory.connect(ohmDeployment.address, signer);
+    const mgmtDeployment = await deployments.get(CONTRACTS.mgmt);
+    const mgmt = await OlympusERC20Token__factory.connect(mgmtDeployment.address, signer);
 
     await deploy(CONTRACTS.bondingCalculator, {
         from: deployer,
-        args: [ohm.address],
+        args: [mgmt.address],
         log: true,
         skipIfAlreadyDeployed: true,
     });
 };
 
 func.tags = [CONTRACTS.bondingCalculator, "staking", "bonding"];
-func.dependencies = [CONTRACTS.ohm];
+func.dependencies = [CONTRACTS.mgmt];
 
 export default func;

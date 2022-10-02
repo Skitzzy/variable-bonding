@@ -18,27 +18,27 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const { deployer } = await getNamedAccounts();
     const signer = await ethers.provider.getSigner(deployer);
 
-    const ohmDeployment = await deployments.get(CONTRACTS.ohm);
+    const mgmtDeployment = await deployments.get(CONTRACTS.mgmt);
     const treasuryDeployment = await deployments.get(CONTRACTS.treasury);
     const daiDeployment = await deployments.get(CONTRACTS.DAI);
 
-    const ohm = OlympusERC20Token__factory.connect(ohmDeployment.address, signer);
+    const mgmt = OlympusERC20Token__factory.connect(mgmtDeployment.address, signer);
     const mockDai = DAI__factory.connect(daiDeployment.address, signer);
     const treasury = OlympusTreasury__factory.connect(treasuryDeployment.address, signer);
 
     // Deploy Faucuet
     await deploy(faucetContract, {
         from: deployer,
-        args: [ohmDeployment.address],
+        args: [mgmtDeployment.address],
         log: true,
         skipIfAlreadyDeployed: true,
     });
     const faucetDeployment = await deployments.get(faucetContract);
 
-    let faucetBalance = await ohm.balanceOf(faucetDeployment.address);
+    let faucetBalance = await mgmt.balanceOf(faucetDeployment.address);
     const minOhm = ethers.BigNumber.from(10000 * 1e9);
     if (faucetBalance.gt(minOhm)) {
-        // short circuit if faucet balance is above 10k ohm
+        // short circuit if faucet balance is above 10k mgmt
         console.log("Sufficient faucet balance");
         console.log("Faucet Balance: ", faucetBalance.toString());
         return;
@@ -53,22 +53,22 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     await waitFor(treasury.enable(0, deployer, ethers.constants.AddressZero)); // Enable the deployer to deposit reserve tokens
     await waitFor(treasury.enable(2, daiDeployment.address, ethers.constants.AddressZero)); // Enable Dai as a reserve Token
 
-    // Deposit and mint ohm
+    // Deposit and mint mgmt
     await waitFor(mockDai.approve(treasury.address, daiAmount)); // Approve treasury to use the dai
     await waitFor(treasury.deposit(daiAmount, daiDeployment.address, INITIAL_MINT_PROFIT)); // Deposit Dai into treasury, with a profit set, so that we have reserves for staking
-    const ohmMinted = await ohm.balanceOf(deployer);
-    console.log("Ohm minted: ", ohmMinted.toString());
+    const mgmtMinted = await mgmt.balanceOf(deployer);
+    console.log("Ohm minted: ", mgmtMinted.toString());
 
     // Fund faucet w/ newly minted dai.
-    await waitFor(ohm.approve(faucetDeployment.address, ohmMinted));
-    await waitFor(ohm.transfer(faucetDeployment.address, ohmMinted));
+    await waitFor(mgmt.approve(faucetDeployment.address, mgmtMinted));
+    await waitFor(mgmt.transfer(faucetDeployment.address, mgmtMinted));
 
-    faucetBalance = await ohm.balanceOf(faucetDeployment.address);
+    faucetBalance = await mgmt.balanceOf(faucetDeployment.address);
     console.log("Faucet balance:", faucetBalance.toString());
 };
 
 func.tags = ["faucet", "testnet"];
-func.dependencies = [CONTRACTS.ohm, CONTRACTS.DAI, CONTRACTS.treasury];
+func.dependencies = [CONTRACTS.mgmt, CONTRACTS.DAI, CONTRACTS.treasury];
 func.runAtTheEnd = true;
 
 export default func;

@@ -44,7 +44,7 @@ contract GenesisClaim is Ownable {
     /* ========== STATE VARIABLES ========== */
 
     // claim token
-    IERC20 internal immutable ohm = IERC20(0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5);
+    IERC20 internal immutable mgmt = IERC20(0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5);
     // payment token
     IERC20 internal immutable dai = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
     // mints claim token
@@ -81,7 +81,7 @@ contract GenesisClaim is Ownable {
      * @param _amount uint256
      */
     function claim(address _to, uint256 _amount) external {
-        ohm.safeTransfer(_to, _claim(_amount));
+        mgmt.safeTransfer(_to, _claim(_amount));
     }
 
     /**
@@ -146,7 +146,7 @@ contract GenesisClaim is Ownable {
      * @notice mass approval saves gas
      */
     function approve() external {
-        ohm.approve(address(staking), 1e33);
+        mgmt.approve(address(staking), 1e33);
         dai.approve(address(treasury), 1e33);
     }
 
@@ -179,7 +179,7 @@ contract GenesisClaim is Ownable {
      * @return uint256
      */
     function circulatingSupply() public view returns (uint256) {
-        return treasury.baseSupply().sub(ohm.balanceOf(dao));
+        return treasury.baseSupply().sub(mgmt.balanceOf(dao));
     }
 
     /* ========== OWNER FUNCTIONS ========== */

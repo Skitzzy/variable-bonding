@@ -32,7 +32,7 @@ contract Distributor is OlympusAccessControlled {
     /* ====== VARIABLES ====== */
 
     /// The OHM Token
-    IERC20 private immutable ohm;
+    IERC20 private immutable mgmt;
     /// The Olympus Treasury
     ITreasury private immutable treasury;
     /// The OHM Staking Contract
@@ -52,13 +52,13 @@ contract Distributor is OlympusAccessControlled {
 
     constructor(
         ITreasury _treasury,
-        IERC20 _ohm,
+        IERC20 _mgmt,
         address _staking,
         IOlympusAuthority _authority,
         uint256 _initialRate
     ) OlympusAccessControlled(_authority) {
         treasury = _treasury;
-        ohm = _ohm;
+        mgmt = _mgmt;
         staking = _staking;
         rewardRate = _initialRate;
     }
@@ -75,7 +75,7 @@ contract Distributor is OlympusAccessControlled {
 
     function triggerRebase() external {
         unlockRebase = true;
-        IStaking(staking).unstake(msg.sender, 0, true, true); // Give the caller the bounty ohm.
+        IStaking(staking).unstake(msg.sender, 0, true, true); // Give the caller the bounty mgmt.
         if(unlockRebase) revert No_Rebase_Occurred();
     }
 
@@ -154,7 +154,7 @@ contract Distributor is OlympusAccessControlled {
 
     /// @notice view function for next reward for an address
     function nextRewardFor(address who) public view returns (uint256) {
-        return (ohm.balanceOf(who) * rewardRate) / DENOMINATOR;
+        return (mgmt.balanceOf(who) * rewardRate) / DENOMINATOR;
     }
 
     /* ====== POLICY FUNCTIONS ====== */

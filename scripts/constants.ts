@@ -1,5 +1,5 @@
 export const CONTRACTS: Record<string, string> = {
-    ohm: "OlympusERC20Token",
+    mgmt: "OlympusERC20Token",
     sOhm: "sOlympus",
     gOhm: "gOHM",
     staking: "OlympusStaking",

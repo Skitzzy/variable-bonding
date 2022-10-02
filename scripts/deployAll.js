@@ -41,7 +41,7 @@ async function main() {
     const firstBlockNumber = "9505000";
 
     const OHM = await ethers.getContractFactory("OlympusERC20Token");
-    const ohm = await OHM.deploy(authority.address);
+    const mgmt = await OHM.deploy(authority.address);
 
     const SOHM = await ethers.getContractFactory("sOlympus");
     const sOHM = await SOHM.deploy();
@@ -52,7 +52,7 @@ async function main() {
     await migrator.setgOHM(gOHM.address);
 
     const OlympusTreasury = await ethers.getContractFactory("OlympusTreasury");
-    const olympusTreasury = await OlympusTreasury.deploy(ohm.address, "0", authority.address);
+    const olympusTreasury = await OlympusTreasury.deploy(mgmt.address, "0", authority.address);
 
     await olympusTreasury.queueTimelock("0", migrator.address, migrator.address);
     await olympusTreasury.queueTimelock("8", migrator.address, migrator.address);
@@ -60,11 +60,11 @@ async function main() {
     await olympusTreasury.queueTimelock("2", FRAX, FRAX);
     await olympusTreasury.queueTimelock("2", LUSD, LUSD);
 
-    await authority.pushVault(olympusTreasury.address, true); // replaces ohm.setVault(treasury.address)
+    await authority.pushVault(olympusTreasury.address, true); // replaces mgmt.setVault(treasury.address)
 
     const OlympusStaking = await ethers.getContractFactory("OlympusStaking");
     const staking = await OlympusStaking.deploy(
-        ohm.address,
+        mgmt.address,
         sOHM.address,
         gOHM.address,
         "2200",
@@ -76,12 +76,12 @@ async function main() {
     const Distributor = await ethers.getContractFactory("Distributor");
     const distributor = await Distributor.deploy(
         olympusTreasury.address,
-        ohm.address,
+        mgmt.address,
         staking.address,
         authority.address
     );
 
-    // Initialize sohm
+    // Initialize smgmt
     await sOHM.setIndex("7675210820");
     await sOHM.setgOHM(gOHM.address);
     await sOHM.initialize(staking.address, olympusTreasury.address);
@@ -95,7 +95,7 @@ async function main() {
     await olympusTreasury.execute("4");
 
     console.log("Olympus Authority: ", authority.address);
-    console.log("OHM: " + ohm.address);
+    console.log("OHM: " + mgmt.address);
     console.log("sOhm: " + sOHM.address);
     console.log("gOHM: " + gOHM.address);
     console.log("Olympus Treasury: " + olympusTreasury.address);

@@ -13,7 +13,7 @@ describe("OlympusTest", () => {
     let vault: SignerWithAddress;
     let bob: SignerWithAddress;
     let alice: SignerWithAddress;
-    let ohm: OlympusERC20Token;
+    let mgmt: OlympusERC20Token;
 
     beforeEach(async () => {
         [deployer, vault, bob, alice] = await ethers.getSigners();
@@ -26,50 +26,50 @@ describe("OlympusTest", () => {
         );
         await authority.deployed();
 
-        ohm = await new OlympusERC20Token__factory(deployer).deploy(authority.address);
+        mgmt = await new OlympusERC20Token__factory(deployer).deploy(authority.address);
     });
 
     it("correctly constructs an ERC20", async () => {
-        expect(await ohm.name()).to.equal("Olympus");
-        expect(await ohm.symbol()).to.equal("OHM");
-        expect(await ohm.decimals()).to.equal(9);
+        expect(await mgmt.name()).to.equal("Olympus");
+        expect(await mgmt.symbol()).to.equal("OHM");
+        expect(await mgmt.decimals()).to.equal(9);
     });
 
     describe("mint", () => {
         it("must be done by vault", async () => {
-            await expect(ohm.connect(deployer).mint(bob.address, 100)).to.be.revertedWith(
+            await expect(mgmt.connect(deployer).mint(bob.address, 100)).to.be.revertedWith(
                 "UNAUTHORIZED"
             );
         });
 
         it("increases total supply", async () => {
-            const supplyBefore = await ohm.totalSupply();
-            await ohm.connect(vault).mint(bob.address, 100);
-            expect(supplyBefore.add(100)).to.equal(await ohm.totalSupply());
+            const supplyBefore = await mgmt.totalSupply();
+            await mgmt.connect(vault).mint(bob.address, 100);
+            expect(supplyBefore.add(100)).to.equal(await mgmt.totalSupply());
         });
     });
 
     describe("burn", () => {
         beforeEach(async () => {
-            await ohm.connect(vault).mint(bob.address, 100);
+            await mgmt.connect(vault).mint(bob.address, 100);
         });
 
         it("reduces the total supply", async () => {
-            const supplyBefore = await ohm.totalSupply();
-            await ohm.connect(bob).burn(10);
-            expect(supplyBefore.sub(10)).to.equal(await ohm.totalSupply());
+            const supplyBefore = await mgmt.totalSupply();
+            await mgmt.connect(bob).burn(10);
+            expect(supplyBefore.sub(10)).to.equal(await mgmt.totalSupply());
         });
 
         it("cannot exceed total supply", async () => {
-            const supply = await ohm.totalSupply();
-            await expect(ohm.connect(bob).burn(supply.add(1))).to.be.revertedWith(
+            const supply = await mgmt.totalSupply();
+            await expect(mgmt.connect(bob).burn(supply.add(1))).to.be.revertedWith(
                 "ERC20: burn amount exceeds balance"
             );
         });
 
         it("cannot exceed bob's balance", async () => {
-            await ohm.connect(vault).mint(alice.address, 15);
-            await expect(ohm.connect(alice).burn(16)).to.be.revertedWith(
+            await mgmt.connect(vault).mint(alice.address, 15);
+            await expect(mgmt.connect(alice).burn(16)).to.be.revertedWith(
                 "ERC20: burn amount exceeds balance"
             );
         });

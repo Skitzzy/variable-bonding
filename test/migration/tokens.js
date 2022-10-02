@@ -21,12 +21,12 @@ const dai_abi = require("../../abis/dai");
 const frax_abi = require("../../abis/frax");
 const weth_abi = require("../../abis/weth");
 const lusd_abi = require("../../abis/lusd");
-const wsohm_abi = require("../../abis/wsohm");
-const sohm_abi = require("../../abis/sohm");
-const ohm_abi = require("../../abis/ohm");
-const ohm_dai_lp_abi = require("../../abis/ohm_dai_lp");
-const ohm_frax_lp_abi = require("../../abis/ohm_frax_lp");
-const ohm_lusd_lp_abi = require("../../abis/ohm_lusd_lp");
+const wsmgmt_abi = require("../../abis/wsmgmt");
+const smgmt_abi = require("../../abis/smgmt");
+const mgmt_abi = require("../../abis/mgmt");
+const mgmt_dai_lp_abi = require("../../abis/mgmt_dai_lp");
+const mgmt_frax_lp_abi = require("../../abis/mgmt_frax_lp");
+const mgmt_lusd_lp_abi = require("../../abis/mgmt_lusd_lp");
 const uni = require("../../abis/uni_factory");
 const sushi = require("../../abis/sushi_factory");
 
@@ -143,23 +143,23 @@ const treasury_tokens = [
 
 const olympus_tokens = [
     {
-        name: "wsohm",
+        name: "wsmgmt",
         address: OLD_WSOHM_ADDRESS,
-        abi: wsohm_abi,
+        abi: wsmgmt_abi,
         migrationType: 2, // WRAPPED
         wallet: WSOHM_USER,
     },
     {
-        name: "sohm",
+        name: "smgmt",
         address: OLD_SOHM_ADDRESS,
-        abi: sohm_abi,
+        abi: smgmt_abi,
         migrationType: 1, // STAKED
         wallet: SOHM_USER,
     },
     {
-        name: "ohm",
+        name: "mgmt",
         address: OLD_OHM_ADDRESS,
-        abi: ohm_abi,
+        abi: mgmt_abi,
         migrationType: 0, // UNSTAKED
         wallet: OHM_USER,
     },
@@ -167,30 +167,30 @@ const olympus_tokens = [
 
 const olympus_lp_tokens = [
     {
-        name: "ohm_frax",
+        name: "mgmt_frax",
         address: OHM_FRAX_LP,
         token0: FRAX_ADDRESS,
         token1: OLD_OHM_ADDRESS,
         is_sushi: false,
-        abi: ohm_frax_lp_abi,
+        abi: mgmt_frax_lp_abi,
         isLP: true,
     },
     {
-        name: "ohm_lusd",
+        name: "mgmt_lusd",
         address: OHM_LUSD_LP,
         token0: LUSD_ADDRESS,
         token1: OLD_OHM_ADDRESS,
         is_sushi: true,
-        abi: ohm_lusd_lp_abi,
+        abi: mgmt_lusd_lp_abi,
         isLP: true,
     },
     {
-        name: "ohm_dai",
+        name: "mgmt_dai",
         address: OHM_DAI_LP,
         token0: DAI_ADDRESS,
         token1: OLD_OHM_ADDRESS,
         is_sushi: true,
-        abi: ohm_dai_lp_abi,
+        abi: mgmt_dai_lp_abi,
         isLP: true,
     },
 ];

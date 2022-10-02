@@ -9,10 +9,10 @@ async function main() {
     const authorityMainnet = "0x1c21F8EA7e39E2BA00BC12d2968D63F4acb38b7A";
 
     // Testnet
-    //const mockSohmDeployment = "0x22C0b7Dc53a4caa95fEAbb05ea0729995a10D727";
+    //const mockSmgmtDeployment = "0x22C0b7Dc53a4caa95fEAbb05ea0729995a10D727";
     /*
-    const sohmDeployment = "0xebED323CEbe4FfF65F7D7612Ea04313F718E5A75";
-    const gohmDeployment = "0xcF2D6893A1CB459fD6B48dC9C41c6110B968611E";
+    const smgmtDeployment = "0xebED323CEbe4FfF65F7D7612Ea04313F718E5A75";
+    const gmgmtDeployment = "0xcF2D6893A1CB459fD6B48dC9C41c6110B968611E";
     const stakingDeployment = "0x06984c3A9EB8e3A8df02A4C09770D5886185792D";
     const authorityDeployment = "0x4208befd8f546282ab43a30085774513227b656c";
     */

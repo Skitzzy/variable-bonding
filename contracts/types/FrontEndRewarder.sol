@@ -12,10 +12,10 @@ abstract contract FrontEndRewarder is OlympusAccessControlled {
     mapping(address => uint256) public rewards; // front end operator rewards
     mapping(address => bool) public whitelisted; // whitelisted status for operators
 
-    IERC20 internal immutable ohm; // reward token
+    IERC20 internal immutable mgmt; // reward token
 
-    constructor(IOlympusAuthority _authority, IERC20 _ohm) OlympusAccessControlled(_authority) {
-        ohm = _ohm;
+    constructor(IOlympusAuthority _authority, IERC20 _mgmt) OlympusAccessControlled(_authority) {
+        mgmt = _mgmt;
     }
 
     /* ========= EXTERNAL FUNCTIONS ========== */
@@ -25,7 +25,7 @@ abstract contract FrontEndRewarder is OlympusAccessControlled {
         uint256 reward = rewards[msg.sender];
 
         rewards[msg.sender] = 0;
-        ohm.transfer(msg.sender, reward);
+        mgmt.transfer(msg.sender, reward);
     }
 
     /* ========= INTERNAL ========== */

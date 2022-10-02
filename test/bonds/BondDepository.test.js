@@ -18,7 +18,7 @@ describe("Bond Depository", async () => {
 
     let auth;
     let dai;
-    let ohm;
+    let mgmt;
     let depository;
     let treasury;
     let gOHM;
@@ -66,13 +66,13 @@ describe("Bond Depository", async () => {
             deployer.address,
             deployer.address
         );
-        ohm = await erc20Factory.deploy("Olympus", "OHM", 9);
+        mgmt = await erc20Factory.deploy("Olympus", "OHM", 9);
         treasury = await smock.fake("ITreasury");
         gOHM = await gOhmFactory.deploy("50000000000"); // Set index as 50
         staking = await smock.fake("OlympusStaking");
         depository = await depositoryFactory.deploy(
             auth.address,
-            ohm.address,
+            mgmt.address,
             gOHM.address,
             staking.address,
             treasury.address
@@ -87,13 +87,13 @@ describe("Bond Depository", async () => {
         await dai.mint(deployer.address, initialDeposit);
         await dai.approve(treasury.address, initialDeposit);
         //await treasury.deposit(initialDeposit, dai.address, "10000000000000");
-        await ohm.mint(deployer.address, "10000000000000");
-        await treasury.baseSupply.returns(await ohm.totalSupply());
+        await mgmt.mint(deployer.address, "10000000000000");
+        await treasury.baseSupply.returns(await mgmt.totalSupply());
 
         // Mint enough gOHM to payout rewards
         await gOHM.mint(depository.address, "1000000000000000000000");
 
-        await ohm.connect(alice).approve(depository.address, LARGE_APPROVAL);
+        await mgmt.connect(alice).approve(depository.address, LARGE_APPROVAL);
         await dai.connect(bob).approve(depository.address, LARGE_APPROVAL);
 
         await depository.setRewards(refReward, daoReward);
@@ -293,13 +293,13 @@ describe("Bond Depository", async () => {
     });
 
     it("should not redeem before vested", async () => {
-        let balance = await ohm.balanceOf(bob.address);
+        let balance = await mgmt.balanceOf(bob.address);
         let amount = "10000000000000000000000"; // 10,000
         await depository
             .connect(bob)
             .deposit(bid, amount, initialPrice, bob.address, carol.address);
         await depository.connect(bob).redeemAll(bob.address, true);
-        expect(await ohm.balanceOf(bob.address)).to.equal(balance);
+        expect(await mgmt.balanceOf(bob.address)).to.equal(balance);
     });
 
     it("should redeem after vested", async () => {
@@ -321,8 +321,8 @@ describe("Bond Depository", async () => {
     });
 
     it("should give correct rewards to referrer and dao", async () => {
-        let daoBalance = await ohm.balanceOf(deployer.address);
-        let refBalance = await ohm.balanceOf(carol.address);
+        let daoBalance = await mgmt.balanceOf(deployer.address);
+        let refBalance = await mgmt.balanceOf(carol.address);
         let amount = "10000000000000000000000"; // 10,000
         let [payout, expiry, index] = await depository
             .connect(bob)
@@ -331,20 +331,20 @@ describe("Bond Depository", async () => {
             .connect(bob)
             .deposit(bid, amount, initialPrice, bob.address, carol.address);
 
-        // Mint ohm for depository to payout reward
-        await ohm.mint(depository.address, "1000000000000000000000");
+        // Mint mgmt for depository to payout reward
+        await mgmt.mint(depository.address, "1000000000000000000000");
 
         let daoExpected = Number(daoBalance) + Number((Number(payout) * daoReward) / 1e4);
         await depository.getReward();
 
-        const frontendReward = Number(await ohm.balanceOf(deployer.address));
+        const frontendReward = Number(await mgmt.balanceOf(deployer.address));
         expect(frontendReward).to.be.greaterThan(Number(daoExpected));
         expect(frontendReward).to.be.lessThan(Number(daoExpected) * 1.0001);
 
         let refExpected = Number(refBalance) + Number((Number(payout) * refReward) / 1e4);
         await depository.connect(carol).getReward();
 
-        const carolReward = Number(await ohm.balanceOf(carol.address));
+        const carolReward = Number(await mgmt.balanceOf(carol.address));
         expect(carolReward).to.be.greaterThan(Number(refExpected));
         expect(carolReward).to.be.lessThan(Number(refExpected) * 1.0001);
     });

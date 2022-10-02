@@ -70,7 +70,7 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
 
     uint256 public totalReserves;
     uint256 public totalDebt;
-    uint256 public ohmDebt;
+    uint256 public mgmtDebt;
 
     Queue[] public permissionQueue;
     uint256 public immutable blocksNeededForQueue;
@@ -88,12 +88,12 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        address _ohm,
+        address _mgmt,
         uint256 _timelock,
         address _authority
     ) OlympusAccessControlled(IOlympusAuthority(_authority)) {
-        require(_ohm != address(0), "Zero address: OHM");
-        OHM = IOHM(_ohm);
+        require(_mgmt != address(0), "Zero address: OHM");
+        OHM = IOHM(_mgmt);
 
         timelockEnabled = false;
         initialized = false;
@@ -218,7 +218,7 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
 
         if (_token == address(OHM)) {
             OHM.mint(msg.sender, value);
-            ohmDebt = ohmDebt.add(value);
+            mgmtDebt = mgmtDebt.add(value);
         } else {
             totalReserves = totalReserves.sub(value);
             IERC20(_token).safeTransfer(msg.sender, _amount);
@@ -254,7 +254,7 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
         OHM.burnFrom(msg.sender, _amount);
         sOHM.changeDebt(_amount, msg.sender, false);
         totalDebt = totalDebt.sub(_amount);
-        ohmDebt = ohmDebt.sub(_amount);
+        mgmtDebt = mgmtDebt.sub(_amount);
         emit RepayDebt(msg.sender, address(OHM), _amount, _amount);
     }
 
@@ -491,6 +491,6 @@ contract OlympusTreasury is OlympusAccessControlled, ITreasury {
      * @return uint256
      */
     function baseSupply() external view override returns (uint256) {
-        return OHM.totalSupply() - ohmDebt;
+        return OHM.totalSupply() - mgmtDebt;
     }
 }

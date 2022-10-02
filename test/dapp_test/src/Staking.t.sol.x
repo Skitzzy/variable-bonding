@@ -28,9 +28,9 @@ contract StakingTest is DSTest {
     OlympusAuthority internal authority;
     Distributor internal distributor;
 
-    OlympusERC20Token internal ohm;
-    sOlympus internal sohm;
-    gOHM internal gohm;
+    OlympusERC20Token internal mgmt;
+    sOlympus internal smgmt;
+    gOHM internal gmgmt;
 
     MockContract internal mockToken;
 
@@ -55,38 +55,38 @@ contract StakingTest is DSTest {
 
         authority = new OlympusAuthority(address(this), address(this), address(this), address(this));
 
-        ohm = new OlympusERC20Token(address(authority));
-        gohm = new gOHM(address(this), address(this));
-        sohm = new sOlympus();
-        sohm.setIndex(10);
-        sohm.setgOHM(address(gohm));
+        mgmt = new OlympusERC20Token(address(authority));
+        gmgmt = new gOHM(address(this), address(this));
+        smgmt = new sOlympus();
+        smgmt.setIndex(10);
+        smgmt.setgOHM(address(gmgmt));
 
-        treasury = new OlympusTreasury(address(ohm), 1, address(authority));
+        treasury = new OlympusTreasury(address(mgmt), 1, address(authority));
 
         staking = new OlympusStaking(
-            address(ohm),
-            address(sohm),
-            address(gohm),
+            address(mgmt),
+            address(smgmt),
+            address(gmgmt),
             EPOCH_LENGTH,
             START_TIME,
             NEXT_REBASE_TIME,
             address(authority)
         );
 
-        distributor = new Distributor(address(treasury), address(ohm), address(staking), address(authority));
+        distributor = new Distributor(address(treasury), address(mgmt), address(staking), address(authority));
         distributor.setBounty(BOUNTY);
         staking.setDistributor(address(distributor));
-        treasury.enable(OlympusTreasury.STATUS.REWARDMANAGER, address(distributor), address(0)); // Allows distributor to mint ohm.
+        treasury.enable(OlympusTreasury.STATUS.REWARDMANAGER, address(distributor), address(0)); // Allows distributor to mint mgmt.
         treasury.enable(OlympusTreasury.STATUS.RESERVETOKEN, address(mockToken), address(0)); // Allow mock token to be deposited into treasury
         treasury.enable(OlympusTreasury.STATUS.RESERVEDEPOSITOR, address(this), address(0)); // Allow this contract to deposit token into treeasury
 
-        sohm.initialize(address(staking), address(treasury));
-        gohm.migrate(address(staking), address(sohm));
+        smgmt.initialize(address(staking), address(treasury));
+        gmgmt.migrate(address(staking), address(smgmt));
 
         // Give the treasury permissions to mint
         authority.pushVault(address(treasury), true);
 
-        // Deposit a token who's profit (3rd param) determines how much ohm the treasury can mint
+        // Deposit a token who's profit (3rd param) determines how much mgmt the treasury can mint
         uint256 depositAmount = 20e18;
         treasury.deposit(depositAmount, address(mockToken), BOUNTY.mul(2)); // Mints (depositAmount- 2xBounty) for this contract
     }
@@ -109,21 +109,21 @@ contract StakingTest is DSTest {
     }
 
     function testStake() public {
-        ohm.approve(address(staking), AMOUNT);
+        mgmt.approve(address(staking), AMOUNT);
         uint256 amountStaked = staking.stake(address(this), AMOUNT, true, true);
         assertEq(amountStaked, AMOUNT);
     }
 
-    function testStakeAtRebaseToGohm() public {
+    function testStakeAtRebaseToGmgmt() public {
         // Move into next rebase window
         hevm.warp(EPOCH_LENGTH);
 
-        ohm.approve(address(staking), AMOUNT);
-        bool isSohm = false;
+        mgmt.approve(address(staking), AMOUNT);
+        bool isSmgmt = false;
         bool claim = true;
-        uint256 gOHMRecieved = staking.stake(address(this), AMOUNT, isSohm, claim);
+        uint256 gOHMRecieved = staking.stake(address(this), AMOUNT, isSmgmt, claim);
 
-        uint256 expectedAmount = gohm.balanceTo(AMOUNT.add(BOUNTY));
+        uint256 expectedAmount = gmgmt.balanceTo(AMOUNT.add(BOUNTY));
         assertEq(gOHMRecieved, expectedAmount);
     }
 
@@ -131,10 +131,10 @@ contract StakingTest is DSTest {
         // Move into next rebase window
         hevm.warp(EPOCH_LENGTH);
 
-        ohm.approve(address(staking), AMOUNT);
-        bool isSohm = true;
+        mgmt.approve(address(staking), AMOUNT);
+        bool isSmgmt = true;
         bool claim = true;
-        uint256 amountStaked = staking.stake(address(this), AMOUNT, isSohm, claim);
+        uint256 amountStaked = staking.stake(address(this), AMOUNT, isSmgmt, claim);
 
         uint256 expectedAmount = AMOUNT.add(BOUNTY);
         assertEq(amountStaked, expectedAmount);
@@ -142,41 +142,41 @@ contract StakingTest is DSTest {
 
     function testUnstake() public {
         bool triggerRebase = true;
-        bool isSohm = true;
+        bool isSmgmt = true;
         bool claim = true;
 
-        // Stake the ohm
-        uint256 initialOhmBalance = ohm.balanceOf(address(this));
-        ohm.approve(address(staking), initialOhmBalance);
-        uint256 amountStaked = staking.stake(address(this), initialOhmBalance, isSohm, claim);
+        // Stake the mgmt
+        uint256 initialOhmBalance = mgmt.balanceOf(address(this));
+        mgmt.approve(address(staking), initialOhmBalance);
+        uint256 amountStaked = staking.stake(address(this), initialOhmBalance, isSmgmt, claim);
         assertEq(amountStaked, initialOhmBalance);
 
         // Validate balances post stake
-        uint256 ohmBalance = ohm.balanceOf(address(this));
-        uint256 sOhmBalance = sohm.balanceOf(address(this));
-        assertEq(ohmBalance, 0);
+        uint256 mgmtBalance = mgmt.balanceOf(address(this));
+        uint256 sOhmBalance = smgmt.balanceOf(address(this));
+        assertEq(mgmtBalance, 0);
         assertEq(sOhmBalance, initialOhmBalance);
 
         // Unstake sOHM
-        sohm.approve(address(staking), sOhmBalance);
-        staking.unstake(address(this), sOhmBalance, triggerRebase, isSohm);
+        smgmt.approve(address(staking), sOhmBalance);
+        staking.unstake(address(this), sOhmBalance, triggerRebase, isSmgmt);
 
         // Validate Balances post unstake
-        ohmBalance = ohm.balanceOf(address(this));
-        sOhmBalance = sohm.balanceOf(address(this));
-        assertEq(ohmBalance, initialOhmBalance);
+        mgmtBalance = mgmt.balanceOf(address(this));
+        sOhmBalance = smgmt.balanceOf(address(this));
+        assertEq(mgmtBalance, initialOhmBalance);
         assertEq(sOhmBalance, 0);
     }
 
     function testUnstakeAtRebase() public {
         bool triggerRebase = true;
-        bool isSohm = true;
+        bool isSmgmt = true;
         bool claim = true;
 
-        // Stake the ohm
-        uint256 initialOhmBalance = ohm.balanceOf(address(this));
-        ohm.approve(address(staking), initialOhmBalance);
-        uint256 amountStaked = staking.stake(address(this), initialOhmBalance, isSohm, claim);
+        // Stake the mgmt
+        uint256 initialOhmBalance = mgmt.balanceOf(address(this));
+        mgmt.approve(address(staking), initialOhmBalance);
+        uint256 amountStaked = staking.stake(address(this), initialOhmBalance, isSmgmt, claim);
         assertEq(amountStaked, initialOhmBalance);
 
         // Move into next rebase window
@@ -184,54 +184,54 @@ contract StakingTest is DSTest {
 
         // Validate balances post stake
         // Post initial rebase, distribution amount is 0, so sOHM balance doens't change.
-        uint256 ohmBalance = ohm.balanceOf(address(this));
-        uint256 sOhmBalance = sohm.balanceOf(address(this));
-        assertEq(ohmBalance, 0);
+        uint256 mgmtBalance = mgmt.balanceOf(address(this));
+        uint256 sOhmBalance = smgmt.balanceOf(address(this));
+        assertEq(mgmtBalance, 0);
         assertEq(sOhmBalance, initialOhmBalance);
 
         // Unstake sOHM
-        sohm.approve(address(staking), sOhmBalance);
-        staking.unstake(address(this), sOhmBalance, triggerRebase, isSohm);
+        smgmt.approve(address(staking), sOhmBalance);
+        staking.unstake(address(this), sOhmBalance, triggerRebase, isSmgmt);
 
         // Validate balances post unstake
-        ohmBalance = ohm.balanceOf(address(this));
-        sOhmBalance = sohm.balanceOf(address(this));
+        mgmtBalance = mgmt.balanceOf(address(this));
+        sOhmBalance = smgmt.balanceOf(address(this));
         uint256 expectedAmount = initialOhmBalance.add(BOUNTY); // Rebase earns a bounty
-        assertEq(ohmBalance, expectedAmount);
+        assertEq(mgmtBalance, expectedAmount);
         assertEq(sOhmBalance, 0);
     }
 
-    function testUnstakeAtRebaseFromGohm() public {
+    function testUnstakeAtRebaseFromGmgmt() public {
         bool triggerRebase = true;
-        bool isSohm = false;
+        bool isSmgmt = false;
         bool claim = true;
 
-        // Stake the ohm
-        uint256 initialOhmBalance = ohm.balanceOf(address(this));
-        ohm.approve(address(staking), initialOhmBalance);
-        uint256 amountStaked = staking.stake(address(this), initialOhmBalance, isSohm, claim);
-        uint256 gohmAmount = gohm.balanceTo(initialOhmBalance);
-        assertEq(amountStaked, gohmAmount);
+        // Stake the mgmt
+        uint256 initialOhmBalance = mgmt.balanceOf(address(this));
+        mgmt.approve(address(staking), initialOhmBalance);
+        uint256 amountStaked = staking.stake(address(this), initialOhmBalance, isSmgmt, claim);
+        uint256 gmgmtAmount = gmgmt.balanceTo(initialOhmBalance);
+        assertEq(amountStaked, gmgmtAmount);
 
         // test the unstake
         // Move into next rebase window
         hevm.warp(EPOCH_LENGTH);
 
         // Validate balances post-stake
-        uint256 ohmBalance = ohm.balanceOf(address(this));
-        uint256 gohmBalance = gohm.balanceOf(address(this));
-        assertEq(ohmBalance, 0);
-        assertEq(gohmBalance, gohmAmount);
+        uint256 mgmtBalance = mgmt.balanceOf(address(this));
+        uint256 gmgmtBalance = gmgmt.balanceOf(address(this));
+        assertEq(mgmtBalance, 0);
+        assertEq(gmgmtBalance, gmgmtAmount);
 
         // Unstake gOHM
-        gohm.approve(address(staking), gohmBalance);
-        staking.unstake(address(this), gohmBalance, triggerRebase, isSohm);
+        gmgmt.approve(address(staking), gmgmtBalance);
+        staking.unstake(address(this), gmgmtBalance, triggerRebase, isSmgmt);
 
         // Validate balances post unstake
-        ohmBalance = ohm.balanceOf(address(this));
-        gohmBalance = gohm.balanceOf(address(this));
+        mgmtBalance = mgmt.balanceOf(address(this));
+        gmgmtBalance = gmgmt.balanceOf(address(this));
         uint256 expectedOhm = initialOhmBalance.add(BOUNTY); // Rebase earns a bounty
-        assertEq(ohmBalance, expectedOhm);
-        assertEq(gohmBalance, 0);
+        assertEq(mgmtBalance, expectedOhm);
+        assertEq(gmgmtBalance, 0);
     }
 }

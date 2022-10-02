@@ -47,7 +47,7 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
     IStaking public newStaking;
     IERC20 public newOHM;
 
-    bool public ohmMigrated;
+    bool public mgmtMigrated;
     bool public shutdown;
 
     uint256 public immutable timelockLength;
@@ -102,7 +102,7 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         uint256 wAmount = oldwsOHM.sOHMTowOHM(_amount);
 
         if (_from == TYPE.UNSTAKED) {
-            require(ohmMigrated, "Only staked until migration");
+            require(mgmtMigrated, "Only staked until migration");
             oldOHM.safeTransferFrom(msg.sender, address(this), _amount);
         } else if (_from == TYPE.STAKED) {
             oldsOHM.safeTransferFrom(msg.sender, address(this), _amount);
@@ -111,7 +111,7 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
             wAmount = _amount;
         }
 
-        if (ohmMigrated) {
+        if (mgmtMigrated) {
             require(oldSupply >= oldOHM.totalSupply(), "OHMv1 minted");
             _send(wAmount, _to);
         } else {
@@ -123,13 +123,13 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
     function migrateAll(TYPE _to) external {
         require(!shutdown, "Shut down");
 
-        uint256 ohmBal = 0;
+        uint256 mgmtBal = 0;
         uint256 sOHMBal = oldsOHM.balanceOf(msg.sender);
         uint256 wsOHMBal = oldwsOHM.balanceOf(msg.sender);
 
-        if (oldOHM.balanceOf(msg.sender) > 0 && ohmMigrated) {
-            ohmBal = oldOHM.balanceOf(msg.sender);
-            oldOHM.safeTransferFrom(msg.sender, address(this), ohmBal);
+        if (oldOHM.balanceOf(msg.sender) > 0 && mgmtMigrated) {
+            mgmtBal = oldOHM.balanceOf(msg.sender);
+            oldOHM.safeTransferFrom(msg.sender, address(this), mgmtBal);
         }
         if (sOHMBal > 0) {
             oldsOHM.safeTransferFrom(msg.sender, address(this), sOHMBal);
@@ -138,8 +138,8 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
             oldwsOHM.safeTransferFrom(msg.sender, address(this), wsOHMBal);
         }
 
-        uint256 wAmount = wsOHMBal.add(oldwsOHM.sOHMTowOHM(ohmBal.add(sOHMBal)));
-        if (ohmMigrated) {
+        uint256 wAmount = wsOHMBal.add(oldwsOHM.sOHMTowOHM(mgmtBal.add(sOHMBal)));
+        if (mgmtMigrated) {
             require(oldSupply >= oldOHM.totalSupply(), "OHMv1 minted");
             _send(wAmount, _to);
         } else {
@@ -160,7 +160,7 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
 
     // bridge back to OHM, sOHM, or wsOHM
     function bridgeBack(uint256 _amount, TYPE _to) external {
-        if (!ohmMigrated) {
+        if (!mgmtMigrated) {
             gOHM.burn(msg.sender, _amount);
         } else {
             gOHM.safeTransferFrom(msg.sender, address(this), _amount);
@@ -181,13 +181,13 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
 
     // halt migrations (but not bridging back)
     function halt() external onlyPolicy {
-        require(!ohmMigrated, "Migration has occurred");
+        require(!mgmtMigrated, "Migration has occurred");
         shutdown = !shutdown;
     }
 
     // withdraw backing of migrated OHM
     function defund(address reserve) external onlyGovernor {
-        require(ohmMigrated, "Migration has not begun");
+        require(mgmtMigrated, "Migration has not begun");
         require(timelockEnd < block.number && timelockEnd != 0, "Timelock not complete");
 
         oldwsOHM.unwrap(oldwsOHM.balanceOf(address(this)));
@@ -279,7 +279,7 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         );
     }
 
-    // Failsafe function to allow owner to withdraw funds sent directly to contract in case someone sends non-ohm tokens to the contract
+    // Failsafe function to allow owner to withdraw funds sent directly to contract in case someone sends non-mgmt tokens to the contract
     function withdrawToken(
         address tokenAddress,
         uint256 amount,
@@ -312,8 +312,8 @@ contract OlympusTokenMigrator is OlympusAccessControlled {
         address _newsOHM,
         address _reserve
     ) external onlyGovernor {
-        require(!ohmMigrated, "Already migrated");
-        ohmMigrated = true;
+        require(!mgmtMigrated, "Already migrated");
+        mgmtMigrated = true;
         shutdown = false;
 
         require(_newTreasury != address(0), "Zero address: Treasury");

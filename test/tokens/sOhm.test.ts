@@ -21,7 +21,7 @@ describe("sOhm", () => {
     let initializer: SignerWithAddress;
     let alice: SignerWithAddress;
     let bob: SignerWithAddress;
-    let ohm: OlympusERC20Token;
+    let mgmt: OlympusERC20Token;
     let sOhm: SOlympus;
     let gOhmFake: FakeContract<GOHM>;
     let stakingFake: FakeContract<OlympusStaking>;
@@ -39,7 +39,7 @@ describe("sOhm", () => {
             initializer.address,
             initializer.address
         );
-        ohm = await new OlympusERC20Token__factory(initializer).deploy(authority.address);
+        mgmt = await new OlympusERC20Token__factory(initializer).deploy(authority.address);
         sOhm = await new SOlympus__factory(initializer).deploy();
     });
 

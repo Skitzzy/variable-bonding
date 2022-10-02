@@ -34,7 +34,7 @@ describe("YieldSplitter", async () => {
     let bob: SignerWithAddress;
     let erc20Factory: ContractFactory;
     let stakingFactory: ContractFactory;
-    let ohmFactory: ContractFactory;
+    let mgmtFactory: ContractFactory;
     let sOhmFactory: ContractFactory;
     let gOhmFactory: ContractFactory;
     let treasuryFactory: ContractFactory;
@@ -44,7 +44,7 @@ describe("YieldSplitter", async () => {
 
     let auth: OlympusAuthority;
     let dai: DAI;
-    let ohm: OlympusERC20Token;
+    let mgmt: OlympusERC20Token;
     let sOhm: SOlympus;
     let staking: OlympusStaking;
     let gOhm: GOHM;
@@ -57,7 +57,7 @@ describe("YieldSplitter", async () => {
         authFactory = await ethers.getContractFactory("OlympusAuthority");
         erc20Factory = await ethers.getContractFactory("DAI");
         stakingFactory = await ethers.getContractFactory("OlympusStaking");
-        ohmFactory = await ethers.getContractFactory("OlympusERC20Token");
+        mgmtFactory = await ethers.getContractFactory("OlympusERC20Token");
         sOhmFactory = await ethers.getContractFactory("sOlympus");
         gOhmFactory = await ethers.getContractFactory("gOHM");
         treasuryFactory = await ethers.getContractFactory("OlympusTreasury");
@@ -73,13 +73,13 @@ describe("YieldSplitter", async () => {
             deployer.address,
             deployer.address
         )) as OlympusAuthority;
-        ohm = (await ohmFactory.deploy(auth.address)) as OlympusERC20Token;
+        mgmt = (await mgmtFactory.deploy(auth.address)) as OlympusERC20Token;
         sOhm = (await sOhmFactory.deploy()) as SOlympus;
         gOhm = (await gOhmFactory.deploy(deployer.address, sOhm.address)) as GOHM;
         const blockNumBefore = await ethers.provider.getBlockNumber();
         const blockBefore = await ethers.provider.getBlock(blockNumBefore);
         staking = (await stakingFactory.deploy(
-            ohm.address,
+            mgmt.address,
             sOhm.address,
             gOhm.address,
             "28800", // 1 epoch = 8 hours
@@ -89,13 +89,13 @@ describe("YieldSplitter", async () => {
         )) as OlympusStaking;
         await gOhm.migrate(staking.address, sOhm.address);
         treasury = (await treasuryFactory.deploy(
-            ohm.address,
+            mgmt.address,
             "0",
             auth.address
         )) as OlympusTreasury;
         distributor = (await distributorFactory.deploy(
             treasury.address,
-            ohm.address,
+            mgmt.address,
             staking.address,
             auth.address,
             initialRewardRate
@@ -112,7 +112,7 @@ describe("YieldSplitter", async () => {
         await dai.approve(treasury.address, LARGE_APPROVAL);
 
         // Needed to spend deployer's OHM
-        await ohm.approve(staking.address, LARGE_APPROVAL);
+        await mgmt.approve(staking.address, LARGE_APPROVAL);
 
         // To get past OHM contract guards
         await auth.pushVault(treasury.address, true);
@@ -139,15 +139,15 @@ describe("YieldSplitter", async () => {
         await treasury.connect(deployer).deposit(toDecimals(10000), dai.address, toOhm(9000));
 
         // Get sOHM in deployer wallet
-        const sohmAmount = toOhm(1000);
-        await ohm.approve(staking.address, sohmAmount);
-        await staking.stake(deployer.address, sohmAmount, true, true);
+        const smgmtAmount = toOhm(1000);
+        await mgmt.approve(staking.address, smgmtAmount);
+        await staking.stake(deployer.address, smgmtAmount, true, true);
         await triggerRebase(); // Trigger first rebase to set initial distribute amount. This rebase shouldn't update index.
 
         // Transfer 100 sOHM to alice for testing
         await sOhm.transfer(alice.address, toOhm(100));
 
-        // Alice should wrap ohm to gOhm. Should have 10gOhm
+        // Alice should wrap mgmt to gOhm. Should have 10gOhm
         await sOhm.approve(staking.address, LARGE_APPROVAL);
         await staking.wrap(deployer.address, toOhm(500));
         await sOhm.connect(alice).approve(staking.address, LARGE_APPROVAL);

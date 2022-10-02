@@ -50,12 +50,12 @@ describe.only("Distributor", () => {
     let authority: OlympusAuthority;
 
     // uniswap
-    let ohmDai: any;
-    let ohmWeth: any;
-    let ohmBtrfly: any;
+    let mgmtDai: any;
+    let mgmtWeth: any;
+    let mgmtBtrfly: any;
 
     // tokens
-    let ohm: MockERC20;
+    let mgmt: MockERC20;
 
     before(async () => {
         await pinBlock(14609847, url);
@@ -79,19 +79,19 @@ describe.only("Distributor", () => {
         governor = await impersonate(await authority.governor());
         guardian = await impersonate(await authority.guardian());
 
-        ohm = await getCoin(coins.ohm);
+        mgmt = await getCoin(coins.mgmt);
 
-        ohmDai = await ethers.getContractAt(
+        mgmtDai = await ethers.getContractAt(
             uniPairAbi,
             "0x055475920a8c93cffb64d039a8205f7acc7722d3"
         );
 
-        ohmWeth = await ethers.getContractAt(
+        mgmtWeth = await ethers.getContractAt(
             uniPairAbi,
             "0x69b81152c5a8d35a67b32a4d3772795d96cae4da"
         );
 
-        ohmBtrfly = await ethers.getContractAt(
+        mgmtBtrfly = await ethers.getContractAt(
             uniPairAbi,
             "0xe9ab8038ee6dd4fcc7612997fe28d4e22019c4b4"
         );
@@ -101,7 +101,7 @@ describe.only("Distributor", () => {
         it("constructs correctly", async () => {
             const distributor = await new Distributor__factory(owner).deploy(
                 treasury.address,
-                ohm.address,
+                mgmt.address,
                 staking.address,
                 authority.address,
                 "2000"
@@ -115,7 +115,7 @@ describe.only("Distributor", () => {
         before(async () => {
             distributor = await new Distributor__factory(owner).deploy(
                 treasury.address,
-                ohm.address,
+                mgmt.address,
                 staking.address,
                 authority.address,
                 "2000"
@@ -144,22 +144,22 @@ describe.only("Distributor", () => {
 
             it("mints to single pool", async () => {
                 await advanceEpoch();
-                const pools = [ohmDai.address];
+                const pools = [mgmtDai.address];
                 await distributor.connect(governor).setPools(pools);
                 const rewardRate = await distributor.rewardRate();
 
-                let [reserve0, reserve1, timestamp] = await ohmDai.getReserves();
+                let [reserve0, reserve1, timestamp] = await mgmtDai.getReserves();
                 const priceBefore = reserve1 / (reserve0 * 1000000000);
-                const balanceBefore = await ohm.balanceOf(pools[0]);
+                const balanceBefore = await mgmt.balanceOf(pools[0]);
                 const expectedBalanceAfter = balanceBefore.add(
                     balanceBefore.mul(rewardRate).div(1000000)
                 );
 
                 await distributor.triggerRebase();
 
-                [reserve0, reserve1, timestamp] = await ohmDai.getReserves();
+                [reserve0, reserve1, timestamp] = await mgmtDai.getReserves();
                 const priceAfter = reserve1 / (reserve0 * 1000000000);
-                const balanceAfter = await ohm.balanceOf(pools[0]);
+                const balanceAfter = await mgmt.balanceOf(pools[0]);
 
                 expect(balanceAfter).to.be.gt(balanceBefore);
                 expect(balanceAfter).to.equal(expectedBalanceAfter);
@@ -172,7 +172,7 @@ describe.only("Distributor", () => {
                 await advanceEpoch();
                 await distributor.triggerRebase();
 
-                [reserve0, reserve1, timestamp] = await ohmDai.getReserves();
+                [reserve0, reserve1, timestamp] = await mgmtDai.getReserves();
                 const price3 = reserve1 / (reserve0 * 1000000000);
 
                 expect(priceBefore).to.be.gt(price3);
@@ -180,44 +180,44 @@ describe.only("Distributor", () => {
 
             it("mints and syncs to multiple pools", async () => {
                 await advanceEpoch();
-                const pools = [ohmDai.address, ohmWeth.address, ohmBtrfly.address];
+                const pools = [mgmtDai.address, mgmtWeth.address, mgmtBtrfly.address];
                 await distributor.connect(governor).setPools(pools);
                 const rewardRate = await distributor.rewardRate();
 
-                let [odReserve0, odReserve1, odTimestamp] = await ohmDai.getReserves();
+                let [odReserve0, odReserve1, odTimestamp] = await mgmtDai.getReserves();
                 const odPriceBefore = odReserve1 / (odReserve0 * 1000000000);
-                const odBalanceBefore = await ohm.balanceOf(pools[0]);
+                const odBalanceBefore = await mgmt.balanceOf(pools[0]);
                 const expectedOdBalanceAfter = odBalanceBefore.add(
                     odBalanceBefore.mul(rewardRate).div(1000000)
                 );
 
-                let [owReserve0, owReserve1, owTimestamp] = await ohmWeth.getReserves();
+                let [owReserve0, owReserve1, owTimestamp] = await mgmtWeth.getReserves();
                 const owPriceBefore = owReserve1 / (owReserve0 * 1000000000);
-                const owBalanceBefore = await ohm.balanceOf(pools[1]);
+                const owBalanceBefore = await mgmt.balanceOf(pools[1]);
                 const expectedOwBalanceAfter = owBalanceBefore.add(
                     owBalanceBefore.mul(rewardRate).div(1000000)
                 );
 
-                let [obReserve0, obReserve1, obTimestamp] = await ohmBtrfly.getReserves();
+                let [obReserve0, obReserve1, obTimestamp] = await mgmtBtrfly.getReserves();
                 const obPriceBefore = obReserve1 / (obReserve0 * 1000000000);
-                const obBalanceBefore = await ohm.balanceOf(pools[2]);
+                const obBalanceBefore = await mgmt.balanceOf(pools[2]);
                 const expectedObBalanceAfter = obBalanceBefore.add(
                     obBalanceBefore.mul(rewardRate).div(1000000)
                 );
 
                 await distributor.triggerRebase();
 
-                [odReserve0, odReserve1, odTimestamp] = await ohmDai.getReserves();
+                [odReserve0, odReserve1, odTimestamp] = await mgmtDai.getReserves();
                 const odPriceAfter = odReserve1 / (odReserve0 * 1000000000);
-                const odBalanceAfter = await ohm.balanceOf(pools[0]);
+                const odBalanceAfter = await mgmt.balanceOf(pools[0]);
 
-                [owReserve0, owReserve1, owTimestamp] = await ohmWeth.getReserves();
+                [owReserve0, owReserve1, owTimestamp] = await mgmtWeth.getReserves();
                 const owPriceAfter = owReserve1 / (owReserve0 * 1000000000);
-                const owBalanceAfter = await ohm.balanceOf(pools[1]);
+                const owBalanceAfter = await mgmt.balanceOf(pools[1]);
 
-                [obReserve0, obReserve1, obTimestamp] = await ohmBtrfly.getReserves();
+                [obReserve0, obReserve1, obTimestamp] = await mgmtBtrfly.getReserves();
                 const obPriceAfter = obReserve1 / (obReserve0 * 1000000000);
-                const obBalanceAfter = await ohm.balanceOf(pools[2]);
+                const obBalanceAfter = await mgmt.balanceOf(pools[2]);
 
                 expect(odBalanceAfter).to.be.gt(odBalanceBefore);
                 expect(odBalanceAfter).to.equal(expectedOdBalanceAfter);
@@ -238,13 +238,13 @@ describe.only("Distributor", () => {
                 await advanceEpoch();
                 await distributor.triggerRebase();
 
-                [odReserve0, odReserve1, odTimestamp] = await ohmDai.getReserves();
+                [odReserve0, odReserve1, odTimestamp] = await mgmtDai.getReserves();
                 const odPrice3 = odReserve1 / (odReserve0 * 1000000000);
 
-                [owReserve0, owReserve1, owTimestamp] = await ohmWeth.getReserves();
+                [owReserve0, owReserve1, owTimestamp] = await mgmtWeth.getReserves();
                 const owPrice3 = owReserve1 / (owReserve0 * 1000000000);
 
-                [obReserve0, obReserve1, obTimestamp] = await ohmBtrfly.getReserves();
+                [obReserve0, obReserve1, obTimestamp] = await mgmtBtrfly.getReserves();
                 const obPrice3 = obReserve1 / (obReserve0 * 1000000000);
 
                 expect(odPriceBefore).to.be.gt(odPrice3);

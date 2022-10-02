@@ -20,7 +20,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const signer = await ethers.provider.getSigner(deployer);
 
     const authorityDeployment = await deployments.get(CONTRACTS.authority);
-    const ohmDeployment = await deployments.get(CONTRACTS.ohm);
+    const mgmtDeployment = await deployments.get(CONTRACTS.mgmt);
     const sOhmDeployment = await deployments.get(CONTRACTS.sOhm);
     const gOhmDeployment = await deployments.get(CONTRACTS.gOhm);
     const distributorDeployment = await deployments.get(CONTRACTS.distributor);
@@ -32,7 +32,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         authorityDeployment.address,
         signer
     );
-    const ohm = OlympusERC20Token__factory.connect(ohmDeployment.address, signer);
+    const mgmt = OlympusERC20Token__factory.connect(mgmtDeployment.address, signer);
     const sOhm = SOlympus__factory.connect(sOhmDeployment.address, signer);
     const gOhm = GOHM__factory.connect(gOhmDeployment.address, signer);
     const distributor = Distributor__factory.connect(distributorDeployment.address, signer);
@@ -45,8 +45,8 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     console.log("Setup -- authorityContract.pushVault: set vault on authority");
 
     // Step 2: Set distributor as minter on treasury
-    await waitFor(treasury.enable(8, distributor.address, ethers.constants.AddressZero)); // Allows distributor to mint ohm.
-    console.log("Setup -- treasury.enable(8):  distributor enabled to mint ohm on treasury");
+    await waitFor(treasury.enable(8, distributor.address, ethers.constants.AddressZero)); // Allows distributor to mint mgmt.
+    console.log("Setup -- treasury.enable(8):  distributor enabled to mint mgmt on treasury");
 
     // Step 3: Set distributor on staking
     await waitFor(staking.setDistributor(distributor.address));
@@ -58,7 +58,7 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         await waitFor(sOhm.setgOHM(gOhm.address));
         await waitFor(sOhm.initialize(staking.address, treasuryDeployment.address));
     }
-    console.log("Setup -- sohm initialized (index, gohm)");
+    console.log("Setup -- smgmt initialized (index, gmgmt)");
 
     // Step 5: Set up distributor with bounty and recipient
     await waitFor(distributor.setBounty(BOUNTY_AMOUNT));
@@ -67,10 +67,10 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
     // Approve staking contact to spend deployer's OHM
     // TODO: Is this needed?
-    // await ohm.approve(staking.address, LARGE_APPROVAL);
+    // await mgmt.approve(staking.address, LARGE_APPROVAL);
 };
 
 func.tags = ["setup"];
-func.dependencies = [CONTRACTS.ohm, CONTRACTS.sOhm, CONTRACTS.gOhm];
+func.dependencies = [CONTRACTS.mgmt, CONTRACTS.sOhm, CONTRACTS.gOhm];
 
 export default func;

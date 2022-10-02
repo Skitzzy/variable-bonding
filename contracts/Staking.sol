@@ -57,7 +57,7 @@ contract OlympusStaking is OlympusAccessControlled {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        address _ohm,
+        address _mgmt,
         address _sOHM,
         address _gOHM,
         uint256 _epochLength,
@@ -65,8 +65,8 @@ contract OlympusStaking is OlympusAccessControlled {
         uint256 _firstEpochTime,
         address _authority
     ) OlympusAccessControlled(IOlympusAuthority(_authority)) {
-        require(_ohm != address(0), "Zero address: OHM");
-        OHM = IERC20(_ohm);
+        require(_mgmt != address(0), "Zero address: OHM");
+        OHM = IERC20(_mgmt);
         require(_sOHM != address(0), "Zero address: sOHM");
         sOHM = IsOHM(_sOHM);
         require(_gOHM != address(0), "Zero address: gOHM");
@@ -228,7 +228,7 @@ contract OlympusStaking is OlympusAccessControlled {
 
             if (address(distributor) != address(0)) {
                 distributor.distribute();
-                bounty = distributor.retrieveBounty(); // Will mint ohm for this contract if there exists a bounty
+                bounty = distributor.retrieveBounty(); // Will mint mgmt for this contract if there exists a bounty
             }
             uint256 balance = OHM.balanceOf(address(this));
             uint256 staked = sOHM.circulatingSupply();

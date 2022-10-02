@@ -7,7 +7,7 @@ import "../../../contracts/OlympusERC20.sol";
 import "../../../contracts/OlympusAuthority.sol";
 
 contract OlymppusERC20TokenTest is DSTest {
-    OlympusERC20Token internal ohmContract;
+    OlympusERC20Token internal mgmtContract;
 
     IOlympusAuthority internal authority;
 
@@ -15,17 +15,17 @@ contract OlymppusERC20TokenTest is DSTest {
 
     function test_erc20() public {
         authority = new OlympusAuthority(address(this), address(this), address(this), address(this));
-        ohmContract = new OlympusERC20Token(address(authority));
-        assertEq("Olympus", ohmContract.name());
-        assertEq("OHM", ohmContract.symbol());
-        assertEq(9, int256(ohmContract.decimals()));
+        mgmtContract = new OlympusERC20Token(address(authority));
+        assertEq("Olympus", mgmtContract.name());
+        assertEq("OHM", mgmtContract.symbol());
+        assertEq(9, int256(mgmtContract.decimals()));
     }
 
     function testCannot_mint() public {
         authority = new OlympusAuthority(address(this), address(this), address(this), UNAUTHORIZED_USER);
-        ohmContract = new OlympusERC20Token(address(authority));
+        mgmtContract = new OlympusERC20Token(address(authority));
         // try/catch block pattern copied from https://github.com/Anish-Agnihotri/MultiRaffle/blob/master/src/test/utils/DSTestExtended.sol
-        try ohmContract.mint(address(this), 100) {
+        try mgmtContract.mint(address(this), 100) {
             fail();
         } catch Error(string memory error) {
             // Assert revert error matches expected message
@@ -36,26 +36,26 @@ contract OlymppusERC20TokenTest is DSTest {
     // Tester will pass it's own parameters, see https://fv.ethereum.org/2020/12/11/symbolic-execution-with-ds-test/
     function test_mint(uint256 amount) public {
         authority = new OlympusAuthority(address(this), address(this), address(this), address(this));
-        ohmContract = new OlympusERC20Token(address(authority));
-        uint256 supplyBefore = ohmContract.totalSupply();
+        mgmtContract = new OlympusERC20Token(address(authority));
+        uint256 supplyBefore = mgmtContract.totalSupply();
         // TODO look into https://dapphub.chat/channel/dev?msg=HWrPJqxp8BHMiKTbo
-        // ohmContract.setVault(address(this)); //TODO WTF msg.sender doesn't propigate from .dapprc $DAPP_TEST_CALLER config via mint() call, must use this value
-        ohmContract.mint(address(this), amount);
-        assertEq(supplyBefore + amount, ohmContract.totalSupply());
+        // mgmtContract.setVault(address(this)); //TODO WTF msg.sender doesn't propigate from .dapprc $DAPP_TEST_CALLER config via mint() call, must use this value
+        mgmtContract.mint(address(this), amount);
+        assertEq(supplyBefore + amount, mgmtContract.totalSupply());
     }
 
     // Tester will pass it's own parameters, see https://fv.ethereum.org/2020/12/11/symbolic-execution-with-ds-test/
     function test_burn(uint256 mintAmount, uint256 burnAmount) public {
         authority = new OlympusAuthority(address(this), address(this), address(this), address(this));
-        ohmContract = new OlympusERC20Token(address(authority));
-        uint256 supplyBefore = ohmContract.totalSupply();
-        // ohmContract.setVault(address(this));  //TODO WTF msg.sender doesn't propigate from .dapprc $DAPP_TEST_CALLER config via mint() call, must use this value
-        ohmContract.mint(address(this), mintAmount);
+        mgmtContract = new OlympusERC20Token(address(authority));
+        uint256 supplyBefore = mgmtContract.totalSupply();
+        // mgmtContract.setVault(address(this));  //TODO WTF msg.sender doesn't propigate from .dapprc $DAPP_TEST_CALLER config via mint() call, must use this value
+        mgmtContract.mint(address(this), mintAmount);
         if (burnAmount <= mintAmount) {
-            ohmContract.burn(burnAmount);
-            assertEq(supplyBefore + mintAmount - burnAmount, ohmContract.totalSupply());
+            mgmtContract.burn(burnAmount);
+            assertEq(supplyBefore + mintAmount - burnAmount, mgmtContract.totalSupply());
         } else {
-            try ohmContract.burn(burnAmount) {
+            try mgmtContract.burn(burnAmount) {
                 fail();
             } catch Error(string memory error) {
                 // Assert revert error matches expected message

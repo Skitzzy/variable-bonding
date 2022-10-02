@@ -11,14 +11,14 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const { deployer } = await getNamedAccounts();
     const signer = await ethers.provider.getSigner(deployer);
 
-    const ohmDeployment = await deployments.get(CONTRACTS.ohm);
+    const mgmtDeployment = await deployments.get(CONTRACTS.mgmt);
 
     const authorityDeployment = await deployments.get(CONTRACTS.authority);
 
     // TODO: TIMELOCK SET TO 0 FOR NOW, CHANGE FOR ACTUAL DEPLOYMENT
     const treasuryDeployment = await deploy(CONTRACTS.treasury, {
         from: deployer,
-        args: [ohmDeployment.address, TREASURY_TIMELOCK, authorityDeployment.address],
+        args: [mgmtDeployment.address, TREASURY_TIMELOCK, authorityDeployment.address],
         log: true,
         skipIfAlreadyDeployed: true,
     });
@@ -27,6 +27,6 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 };
 
 func.tags = [CONTRACTS.treasury, "treasury"];
-func.dependencies = [CONTRACTS.ohm];
+func.dependencies = [CONTRACTS.mgmt];
 
 export default func;

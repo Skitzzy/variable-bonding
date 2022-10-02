@@ -4,7 +4,7 @@ const { advanceBlock } = require("../utils/advancement");
 const { fork_network, fork_reset } = require("../utils/network_fork");
 const impersonateAccount = require("../utils/impersonate_account");
 const old_treasury_abi = require("../../abis/old_treasury_abi");
-const old_sohm_abi = require("../../abis/sohm");
+const old_smgmt_abi = require("../../abis/smgmt");
 
 const { treasury_tokens, olympus_tokens, olympus_lp_tokens, swaps } = require("./tokens");
 const { addresses } = require("./config");
@@ -38,7 +38,7 @@ describe.skip("Treasury Token Migration", async function () {
         old_treasury,
         olympusTokenMigrator,
         index,
-        ohm,
+        mgmt,
         sOhm,
         gOhm,
         newTreasury,
@@ -58,14 +58,14 @@ describe.skip("Treasury Token Migration", async function () {
             deployer.address
         );
 
-        let ohmContract = await ethers.getContractFactory("OlympusERC20Token");
-        ohm = await ohmContract.deploy(authority.address);
+        let mgmtContract = await ethers.getContractFactory("OlympusERC20Token");
+        mgmt = await mgmtContract.deploy(authority.address);
 
         let sOhmContract = await ethers.getContractFactory("sOlympus");
         sOhm = await sOhmContract.connect(deployer).deploy();
 
         let newTreasuryContract = await ethers.getContractFactory("OlympusTreasury");
-        newTreasury = await newTreasuryContract.deploy(ohm.address, 10, authority.address);
+        newTreasury = await newTreasuryContract.deploy(mgmt.address, 10, authority.address);
 
         let tokenMigratorContract = await ethers.getContractFactory("OlympusTokenMigrator");
         olympusTokenMigrator = await tokenMigratorContract.deploy(
@@ -91,12 +91,12 @@ describe.skip("Treasury Token Migration", async function () {
         // Set gOHM on migrator contract
         await olympusTokenMigrator.connect(deployer).setgOHM(gOhm.address);
 
-        // Setting the vault for new ohm:
+        // Setting the vault for new mgmt:
         await authority.pushVault(newTreasury.address, true);
 
         let newStakingContract = await ethers.getContractFactory("OlympusStaking");
         newStaking = await newStakingContract.deploy(
-            ohm.address,
+            mgmt.address,
             sOhm.address,
             gOhm.address,
             EPOCH_LEGNTH,
@@ -109,8 +109,8 @@ describe.skip("Treasury Token Migration", async function () {
         newStaking.connect(deployer).setWarmupLength(0);
 
         // Initialize new sOHM
-        const oldSohm = await new ethers.Contract(OLD_SOHM_ADDRESS, old_sohm_abi, ethers.provider);
-        index = await oldSohm.connect(deployer).index();
+        const oldSmgmt = await new ethers.Contract(OLD_SOHM_ADDRESS, old_smgmt_abi, ethers.provider);
+        index = await oldSmgmt.connect(deployer).index();
         sOhm.connect(deployer).setIndex(index);
         sOhm.connect(deployer).setgOHM(gOhm.address);
         sOhm.connect(deployer).initialize(newStaking.address, newTreasury.address);
@@ -183,7 +183,7 @@ describe.skip("Treasury Token Migration", async function () {
         ).to.revertedWith("UNAUTHORIZED");
     });
 
-    it("Should fail if user does not have any of the ohm tokens to migrate ", async () => {
+    it("Should fail if user does not have any of the mgmt tokens to migrate ", async () => {
         await sendETH(deployer, NON_TOKEN_HOLDER);
         const user = await impersonate(NON_TOKEN_HOLDER);
         // Using safeTransferFrom so generic safeERC20 error message
@@ -192,7 +192,7 @@ describe.skip("Treasury Token Migration", async function () {
         );
     });
 
-    it("Should fail if user does not have any of the ohm tokens to bridge back ", async () => {
+    it("Should fail if user does not have any of the mgmt tokens to bridge back ", async () => {
         await sendETH(deployer, NON_TOKEN_HOLDER);
         const user = await impersonate(NON_TOKEN_HOLDER);
         await expect(olympusTokenMigrator.connect(user).bridgeBack(1000000, 0)).to.revertedWith(
@@ -252,8 +252,8 @@ describe.skip("Treasury Token Migration", async function () {
     describe("Olympus Token Migrations", async () => {
         let sOHMindex = 1;
 
-        function toGohm(sohmAmount) {
-            return sohmAmount.mul(10 ** 9).div(sOHMindex);
+        function toGmgmt(smgmtAmount) {
+            return smgmtAmount.mul(10 ** 9).div(sOHMindex);
         }
 
         async function performBridgeBack({ wallet, contract, migrationType }) {
@@ -276,27 +276,27 @@ describe.skip("Treasury Token Migration", async function () {
             }
         });
         /** 
-        it("should migrate ohm", async () => {
-            const token = olympus_tokens.find((token) => token.name === "ohm");
+        it("should migrate mgmt", async () => {
+            const token = olympus_tokens.find((token) => token.name === "mgmt");
             const { oldTokenBalance, newgOhmBalance } = await performMigration(token);
 
-            let gohmBalanceOld = toGohm(oldTokenBalance).toString();
-            let gohmBalanceNew = newgOhmBalance.toString().slice(0, 10); //Hacky shit bruh
+            let gmgmtBalanceOld = toGmgmt(oldTokenBalance).toString();
+            let gmgmtBalanceNew = newgOhmBalance.toString().slice(0, 10); //Hacky shit bruh
 
-            assert.equal(gohmBalanceOld, gohmBalanceNew);
+            assert.equal(gmgmtBalanceOld, gmgmtBalanceNew);
         });
 */
-        it("should migrate sohm", async () => {
-            const token = olympus_tokens.find((token) => token.name === "sohm");
+        it("should migrate smgmt", async () => {
+            const token = olympus_tokens.find((token) => token.name === "smgmt");
             const { oldTokenBalance, newgOhmBalance } = await performMigration(token);
 
-            let gohmBalanceOld = toGohm(oldTokenBalance).toString();
-            let gohmBalanceNew = newgOhmBalance.toString().slice(0, 11); //Hacky shit bruh
+            let gmgmtBalanceOld = toGmgmt(oldTokenBalance).toString();
+            let gmgmtBalanceNew = newgOhmBalance.toString().slice(0, 11); //Hacky shit bruh
 
-            assert.equal(gohmBalanceOld, gohmBalanceNew);
+            assert.equal(gmgmtBalanceOld, gmgmtBalanceNew);
         });
         it("should migrate wsOhm", async () => {
-            const token = olympus_tokens.find((token) => token.name === "wsohm");
+            const token = olympus_tokens.find((token) => token.name === "wsmgmt");
             const { oldTokenBalance, newgOhmBalance } = await performMigration(token);
 
             assert.equal(
@@ -306,26 +306,26 @@ describe.skip("Treasury Token Migration", async function () {
             );
         });
 
-        it("should bridgeBack ohm", async () => {
-            const token = olympus_tokens.find((token) => token.name === "ohm");
+        it("should bridgeBack mgmt", async () => {
+            const token = olympus_tokens.find((token) => token.name === "mgmt");
             const { oldgOhmBalance, newTokenBalance } = await performBridgeBack(token);
 
-            let gohmBalanceOld = oldgOhmBalance.toString().slice(0, 10); //Hacky shit bruh
-            let gohmBalanceNew = toGohm(newTokenBalance).toString();
+            let gmgmtBalanceOld = oldgOhmBalance.toString().slice(0, 10); //Hacky shit bruh
+            let gmgmtBalanceNew = toGmgmt(newTokenBalance).toString();
 
-            assert.equal(gohmBalanceOld, gohmBalanceNew);
+            assert.equal(gmgmtBalanceOld, gmgmtBalanceNew);
         });
         it("should bridgeBack sOhm", async () => {
-            const token = olympus_tokens.find((token) => token.name === "sohm");
+            const token = olympus_tokens.find((token) => token.name === "smgmt");
             const { oldgOhmBalance, newTokenBalance } = await performBridgeBack(token);
 
-            let gohmBalanceOld = oldgOhmBalance.toString().slice(0, 11); //Hacky shit bruh
-            let gohmBalanceNew = toGohm(newTokenBalance).toString();
+            let gmgmtBalanceOld = oldgOhmBalance.toString().slice(0, 11); //Hacky shit bruh
+            let gmgmtBalanceNew = toGmgmt(newTokenBalance).toString();
 
-            assert.equal(gohmBalanceOld, gohmBalanceNew);
+            assert.equal(gmgmtBalanceOld, gmgmtBalanceNew);
         });
         it("should bridgeBack gOhm", async () => {
-            const token = olympus_tokens.find((token) => token.name === "wsohm");
+            const token = olympus_tokens.find((token) => token.name === "wsmgmt");
             const { oldgOhmBalance, newTokenBalance } = await performBridgeBack(token);
 
             assert.equal(
@@ -354,7 +354,7 @@ describe.skip("Treasury Token Migration", async function () {
             .migrateContracts(
                 newTreasury.address,
                 newStaking.address,
-                ohm.address,
+                mgmt.address,
                 sOhm.address,
                 lusd.address
             );
@@ -377,14 +377,14 @@ describe.skip("Treasury Token Migration", async function () {
             const asset0Address = lpToken.token0;
             let newLPAddress;
             if (lpToken.is_sushi) {
-                newLPAddress = await sushi_factory_contract.getPair(ohm.address, asset0Address);
+                newLPAddress = await sushi_factory_contract.getPair(mgmt.address, asset0Address);
                 if (newLPAddress === "0x0000000000000000000000000000000000000000") {
-                    newLPAddress = await sushi_factory_contract.getPair(asset0Address, ohm.address);
+                    newLPAddress = await sushi_factory_contract.getPair(asset0Address, mgmt.address);
                 }
             } else {
-                newLPAddress = await uni_factory_contract.getPair(ohm.address, asset0Address);
+                newLPAddress = await uni_factory_contract.getPair(mgmt.address, asset0Address);
                 if (newLPAddress === "0x0000000000000000000000000000000000000000") {
-                    newLPAddress = await uni_factory_contract.getPair(ohm.address, asset0Address);
+                    newLPAddress = await uni_factory_contract.getPair(mgmt.address, asset0Address);
                 }
             }
             const contract = new ethers.Contract(newLPAddress, lpToken.abi, ethers.provider);
@@ -406,21 +406,21 @@ describe.skip("Treasury Token Migration", async function () {
 
         const assertPromises = allReserveandLP.map(async (token) => {
             if (token.name === "dai") {
-                const old_ohm_total_supply = await olympus_tokens[2].contract.totalSupply();
-                const dai_balance_left_to_back_circulating_ohm_1_for_1 =
+                const old_mgmt_total_supply = await olympus_tokens[2].contract.totalSupply();
+                const dai_balance_left_to_back_circulating_mgmt_1_for_1 =
                     await treasury_tokens[3].contract.balanceOf(OLD_TREASURY_ADDRESS);
 
-                const old_ohm_balance_in_18_decimal = (old_ohm_total_supply * 10 ** 18) / 10 ** 9;
+                const old_mgmt_balance_in_18_decimal = (old_mgmt_total_supply * 10 ** 18) / 10 ** 9;
 
-                expect(Number(dai_balance_left_to_back_circulating_ohm_1_for_1)).to.above(
-                    Number(old_ohm_balance_in_18_decimal)
+                expect(Number(dai_balance_left_to_back_circulating_mgmt_1_for_1)).to.above(
+                    Number(old_mgmt_balance_in_18_decimal)
                 );
 
                 // Dai will be left in treasury for defund.
                 // What is the actual expected value of dai left over?
 
                 // Don't think we can acertain that, I just ensured that
-                // the DAI left is enough to back the old ohm circulating supply 1 for 1.
+                // the DAI left is enough to back the old mgmt circulating supply 1 for 1.
 
                 return;
             }
@@ -462,34 +462,34 @@ describe.skip("Treasury Token Migration", async function () {
                 .connect(deployer)
                 .balanceOf(newTreasury.address);
 
-            const token0 = olympus_tokens.find((token) => token.name === "wsohm");
+            const token0 = olympus_tokens.find((token) => token.name === "wsmgmt");
             await performMigration(token0);
 
-            const token1 = olympus_tokens.find((token) => token.name === "sohm");
+            const token1 = olympus_tokens.find((token) => token.name === "smgmt");
             await performMigration(token1);
 
-            const olympus_token_migrator_wsohm_balance = await olympus_tokens[0].contract.balanceOf(
+            const olympus_token_migrator_wsmgmt_balance = await olympus_tokens[0].contract.balanceOf(
                 olympusTokenMigrator.address
             );
 
-            const wsohm_balance_in_ohm = await olympus_tokens[0].contract.wOHMTosOHM(
-                olympus_token_migrator_wsohm_balance
+            const wsmgmt_balance_in_mgmt = await olympus_tokens[0].contract.wOHMTosOHM(
+                olympus_token_migrator_wsmgmt_balance
             );
 
-            const olympus_token_migrator_ohm_balance = await olympus_tokens[2].contract.balanceOf(
+            const olympus_token_migrator_mgmt_balance = await olympus_tokens[2].contract.balanceOf(
                 olympusTokenMigrator.address
             );
-            const olympus_token_migrator_sohm_balance = await olympus_tokens[1].contract.balanceOf(
+            const olympus_token_migrator_smgmt_balance = await olympus_tokens[1].contract.balanceOf(
                 olympusTokenMigrator.address
             );
 
-            const olympus_token_migrator_total_ohm =
-                Number(wsohm_balance_in_ohm) +
-                Number(olympus_token_migrator_ohm_balance) +
-                Number(olympus_token_migrator_sohm_balance);
+            const olympus_token_migrator_total_mgmt =
+                Number(wsmgmt_balance_in_mgmt) +
+                Number(olympus_token_migrator_mgmt_balance) +
+                Number(olympus_token_migrator_smgmt_balance);
 
-            const convert_ohm_to_dai_decimal =
-                (olympus_token_migrator_total_ohm * 10 ** 18) / 10 ** 9;
+            const convert_mgmt_to_dai_decimal =
+                (olympus_token_migrator_total_mgmt * 10 ** 18) / 10 ** 9;
 
             await olympusTokenMigrator.connect(deployer).defund(DAI_ADDRESS);
 
@@ -497,12 +497,12 @@ describe.skip("Treasury Token Migration", async function () {
                 .connect(deployer)
                 .balanceOf(newTreasury.address);
 
-            const new_dai_from_ohm_in_migrator_contract_in_new_treasury =
+            const new_dai_from_mgmt_in_migrator_contract_in_new_treasury =
                 Number(v2TreasuryBalanceNew) - Number(v2TreasuryBalanceOld);
 
             assert.equal(
-                new_dai_from_ohm_in_migrator_contract_in_new_treasury.toString().slice(0, 10),
-                convert_ohm_to_dai_decimal.toString().slice(0, 10)
+                new_dai_from_mgmt_in_migrator_contract_in_new_treasury.toString().slice(0, 10),
+                convert_mgmt_to_dai_decimal.toString().slice(0, 10)
             );
         });
     });
@@ -610,7 +610,7 @@ async function migrateToken(deployer, migrator, gOhm, token, isBridgeBack = fals
     );
 
     console.log(`(old) user_${name}_balance:`, oldTokenBalance.toString());
-    console.log("(old) user_gohm_balance:", oldgOhmBalance.toString());
+    console.log("(old) user_gmgmt_balance:", oldgOhmBalance.toString());
 
     const user = await impersonate(userAddress);
     await sendETH(deployer, userAddress);
@@ -626,12 +626,12 @@ async function migrateToken(deployer, migrator, gOhm, token, isBridgeBack = fals
     let newgOhmBalance = await gOhm.balanceOf(userAddress);
 
     console.log(`(new) user_${name}_balance:`, newTokenBalance.toString());
-    console.log("(new) user_gohm_balance:", newgOhmBalance.toString());
+    console.log("(new) user_gmgmt_balance:", newgOhmBalance.toString());
     console.log();
 }
 
 // TODO(zx): DEBUG re-use this method at the end of migration to view full balances.
-async function getTreasuryBalanceOldAndNewAfterTx(deployer, newTreasury, ohm) {
+async function getTreasuryBalanceOldAndNewAfterTx(deployer, newTreasury, mgmt) {
     for (let i = 0; i < treasury_tokens.length; i++) {
         console.log("===============Treasury Token Migration Done!===============");
         const contract = treasury_tokens[i].contract;
@@ -647,35 +647,35 @@ async function getTreasuryBalanceOldAndNewAfterTx(deployer, newTreasury, ohm) {
     const uni_factory_contract = swaps[0].contract;
     const sushi_factory_contract = swaps[1].contract;
 
-    const new_ohm_frax_lp_address = await uni_factory_contract.getPair(
-        ohm.address,
+    const new_mgmt_frax_lp_address = await uni_factory_contract.getPair(
+        mgmt.address,
         tokenAddresses[0]
     );
-    const new_ohm_dai_lp_address = await sushi_factory_contract.getPair(
-        ohm.address,
+    const new_mgmt_dai_lp_address = await sushi_factory_contract.getPair(
+        mgmt.address,
         tokenAddresses[3]
     );
-    const new_ohm_lusd_lp_address = await sushi_factory_contract.getPair(
-        ohm.address,
+    const new_mgmt_lusd_lp_address = await sushi_factory_contract.getPair(
+        mgmt.address,
         tokenAddresses[2]
     );
 
-    const new_ohm_frax_lp = new ethers.Contract(
-        new_ohm_frax_lp_address,
+    const new_mgmt_frax_lp = new ethers.Contract(
+        new_mgmt_frax_lp_address,
         olympus_lp_tokens[0].abi,
         ethers.provider
     );
-    const new_ohm_dai_lp = new ethers.Contract(
-        new_ohm_dai_lp_address,
+    const new_mgmt_dai_lp = new ethers.Contract(
+        new_mgmt_dai_lp_address,
         olympus_lp_tokens[0].abi,
         ethers.provider
     );
-    const new_ohm_lusd_lp = new ethers.Contract(
-        new_ohm_lusd_lp_address,
+    const new_mgmt_lusd_lp = new ethers.Contract(
+        new_mgmt_lusd_lp_address,
         olympus_lp_tokens[0].abi,
         ethers.provider
     );
-    const addr = [new_ohm_frax_lp, new_ohm_lusd_lp, new_ohm_dai_lp];
+    const addr = [new_mgmt_frax_lp, new_mgmt_lusd_lp, new_mgmt_dai_lp];
 
     for (let i = 0; i < 3; i++) {
         const name = ["frax", "lusd", "dai"];

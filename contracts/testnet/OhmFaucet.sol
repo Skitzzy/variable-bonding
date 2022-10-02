@@ -5,17 +5,17 @@ import "../interfaces/IERC20.sol";
 import "../types/Ownable.sol";
 
 contract OhmFaucet is Ownable {
-    IERC20 public ohm;
+    IERC20 public mgmt;
 
-    constructor(address _ohm) {
-        ohm = IERC20(_ohm);
+    constructor(address _mgmt) {
+        mgmt = IERC20(_mgmt);
     }
 
-    function setOhm(address _ohm) external onlyOwner {
-        ohm = IERC20(_ohm);
+    function setOhm(address _mgmt) external onlyOwner {
+        mgmt = IERC20(_mgmt);
     }
 
     function dispense() external {
-        ohm.transfer(msg.sender, 1e9);
+        mgmt.transfer(msg.sender, 1e9);
     }
 }

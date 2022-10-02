@@ -64,7 +64,7 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
         @param gOHM_ Address of gOHM.
         @param sOHM_ Address of sOHM.
         @param OHM_ Address of OHM.
-        @param streamToken_ Address of the token the ohm will be swapped to.
+        @param streamToken_ Address of the token the mgmt will be swapped to.
         @param sushiRouter_ Address of sushiswap router.
         @param staking_ Address of sOHM staking contract.
         @param authority_ Address of Olympus authority contract.
@@ -328,10 +328,10 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
 
         uint256 totalOhmToSwap = staking.unstake(address(this), totalGOHM - feeToDao, false, false);
 
-        (, int256 ohmOraclePrice, , , ) = priceConverterOracleWrapper.latestRoundData();
+        (, int256 mgmtOraclePrice, , , ) = priceConverterOracleWrapper.latestRoundData();
         uint256[] memory amounts = sushiRouter.swapExactTokensForTokens(
             totalOhmToSwap,
-            (uint256(ohmOraclePrice) * (sixDecimalMaxNumber - maxSwapSlippagePercent)) / sixDecimalMaxNumber,
+            (uint256(mgmtOraclePrice) * (sixDecimalMaxNumber - maxSwapSlippagePercent)) / sixDecimalMaxNumber,
             sushiRouterPath,
             address(this),
             block.timestamp
@@ -376,7 +376,7 @@ contract YieldStreamer is IYieldStreamer, YieldSplitter {
     }
 
     /**
-        @notice Gets the number of deposits eligible for upkeep and amount of ohm of yield available to swap.
+        @notice Gets the number of deposits eligible for upkeep and amount of mgmt of yield available to swap.
                 Eligible for upkeep means enough time(payment interval of deposit) has passed since last upkeep.
         @return numberOfDepositsEligible : number of deposits eligible for upkeep.
         @return amountOfYieldToSwap : total amount of yield in gOHM ready to be swapped in next upkeep.
